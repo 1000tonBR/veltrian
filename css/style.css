@@ -49,7 +49,7 @@ header{
 
     width:100%;
 
-    height:72px;
+    height:84px;
 
     background:#ffffff;
 
@@ -61,7 +61,7 @@ header{
 
 header .container{
 
-    height:72px;
+    height:84px;
 
     display:flex;
 
@@ -72,7 +72,7 @@ header .container{
 }
 
 .logo img {
-    height: 80px;
+    height: 64px;
     width: auto;
     display: block;
 }
@@ -111,7 +111,7 @@ CATÁLOGO
 
 .catalogo{
 
-    margin-top:72px;
+    margin-top:84px;
 
     padding:20px 0;
 
@@ -249,7 +249,7 @@ RESPONSIVO
 
     .catalogo{
 
-        margin-top:110px;
+        margin-top:122px;
 
     }
 
@@ -308,7 +308,7 @@ RESPONSIVO
 @media(max-width:480px){
 
 .logo img {
-    height: 80px;
+    height: 64px;
     width: auto;
     display: block;
 
