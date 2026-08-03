@@ -83,9 +83,12 @@ nav{
 
     gap:40px;
 
+    position:relative;
+
 }
 
-nav a{
+nav a,
+.contato-toggle{
 
     text-decoration:none;
 
@@ -97,9 +100,105 @@ nav a{
 
     transition:.25s;
 
+    border:0;
+
+    background:transparent;
+
+    font-family:inherit;
+
+    cursor:pointer;
+
 }
 
-nav a:hover{
+nav a:hover,
+.contato-toggle:hover{
+
+    color:#b68b57;
+
+}
+
+.contato-balao{
+
+    position:absolute;
+
+    top:calc(100% + 18px);
+
+    right:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    min-width:260px;
+
+    padding:20px 22px;
+
+    background:#fff;
+
+    border:1px solid #eadcd2;
+
+    border-radius:24px;
+
+    box-shadow:0 12px 30px rgba(106,58,42,.16);
+
+    color:#6A3A2A;
+
+    z-index:1000;
+
+}
+
+.contato-balao::before{
+
+    content:"";
+
+    position:absolute;
+
+    top:-8px;
+
+    right:20px;
+
+    width:16px;
+
+    height:16px;
+
+    background:#fff;
+
+    border-top:1px solid #eadcd2;
+
+    border-left:1px solid #eadcd2;
+
+    transform:rotate(45deg);
+
+}
+
+.contato-balao strong,
+.contato-balao a{
+
+    position:relative;
+
+    z-index:1;
+
+}
+
+.contato-balao strong{
+
+    font-size:18px;
+
+}
+
+.contato-balao a{
+
+    color:#6A3A2A;
+
+    font-size:15px;
+
+    text-decoration:none;
+
+}
+
+.contato-balao a:hover{
 
     color:#b68b57;
 
@@ -409,6 +508,14 @@ RESPONSIVO
         flex-wrap:wrap;
 
         justify-content:center;
+
+    }
+
+    .contato-balao{
+
+        right:50%;
+
+        transform:translateX(50%);
 
     }
 

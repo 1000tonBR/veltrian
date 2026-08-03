@@ -39,4 +39,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.addEventListener("scroll", atualizarHeader);
 
+    /*==========================================
+    Balão de contato
+    ==========================================*/
+
+    const contatoToggle = document.querySelector(".contato-toggle");
+    const contatoBalao = document.querySelector(".contato-balao");
+
+    if(contatoToggle && contatoBalao){
+
+        contatoToggle.addEventListener("click", () => {
+
+            const estaAberto = !contatoBalao.hidden;
+
+            contatoBalao.hidden = estaAberto;
+            contatoToggle.setAttribute("aria-expanded", String(!estaAberto));
+
+        });
+
+        document.addEventListener("click", event => {
+
+            if(!contatoBalao.hidden && !contatoBalao.contains(event.target) && !contatoToggle.contains(event.target)){
+
+                contatoBalao.hidden = true;
+                contatoToggle.setAttribute("aria-expanded", "false");
+
+            }
+
+        });
+
+        document.addEventListener("keydown", event => {
+
+            if(event.key === "Escape"){
+
+                contatoBalao.hidden = true;
+                contatoToggle.setAttribute("aria-expanded", "false");
+
+            }
+
+        });
+
+    }
+
 });
