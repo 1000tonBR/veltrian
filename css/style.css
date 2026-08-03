@@ -203,25 +203,41 @@ CATÁLOGO
 
     justify-content:center;
 
-    min-height:230px;
+    min-height:260px;
 
     padding:30px;
 
-    background:#fff;
+    background:linear-gradient(145deg,#fff,#f6eee8);
 
     border:1px solid #ece4df;
 
-    border-radius:12px;
+    border-radius:36px;
 
     text-align:center;
 
     box-shadow:0 6px 18px rgba(0,0,0,.05);
+
+    color:inherit;
+
+    text-decoration:none;
+
+    transition:transform .25s, box-shadow .25s, background .25s;
 
 }
 
 .catalogo-card.dia-dos-pais{
 
     border:2px solid #b68b57;
+
+    background:linear-gradient(145deg,#fffaf5,#f1dfce);
+
+}
+
+.catalogo-card:hover{
+
+    transform:translateY(-6px);
+
+    box-shadow:0 14px 28px rgba(106,58,42,.16);
 
 }
 
@@ -259,7 +275,7 @@ CATÁLOGO
 
 }
 
-.catalogo-card a{
+.abrir-catalogo{
 
     display:inline-block;
 
@@ -279,11 +295,6 @@ CATÁLOGO
 
 }
 
-.catalogo-card a:hover{
-
-    background:#8a5a43;
-
-}
 
 .catalogo iframe{
 
