@@ -1,0 +1,6 @@
+.brand img.brand-mark {
+  width: 30px;
+  height: 23px;
+  display: block;
+  object-fit: fill;
+}

@@ -1,84 +1,13 @@
-/*==================================================
-PETIT BISCUIT
-script.js
-==================================================*/
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    /*==========================================
-    Atualiza automaticamente o ano do rodapé
-    ==========================================*/
-
-    const anoAtual = new Date().getFullYear();
-
-    document.querySelectorAll(".ano").forEach(item => {
-        item.textContent = anoAtual;
-    });
-
-    /*==========================================
-    Header com sombra ao rolar
-    ==========================================*/
-
-    const header = document.querySelector("header");
-
-    function atualizarHeader(){
-
-        if(window.scrollY > 15){
-
-            header.classList.add("scroll");
-
-        }else{
-
-            header.classList.remove("scroll");
-
-        }
-
-    }
-
-    atualizarHeader();
-
-    window.addEventListener("scroll", atualizarHeader);
-
-    /*==========================================
-    Balão de contato
-    ==========================================*/
-
-    const contatoToggle = document.querySelector(".contato-toggle");
-    const contatoBalao = document.querySelector(".contato-balao");
-
-    if(contatoToggle && contatoBalao){
-
-        contatoToggle.addEventListener("click", () => {
-
-            const estaAberto = !contatoBalao.hidden;
-
-            contatoBalao.hidden = estaAberto;
-            contatoToggle.setAttribute("aria-expanded", String(!estaAberto));
-
-        });
-
-        document.addEventListener("click", event => {
-
-            if(!contatoBalao.hidden && !contatoBalao.contains(event.target) && !contatoToggle.contains(event.target)){
-
-                contatoBalao.hidden = true;
-                contatoToggle.setAttribute("aria-expanded", "false");
-
-            }
-
-        });
-
-        document.addEventListener("keydown", event => {
-
-            if(event.key === "Escape"){
-
-                contatoBalao.hidden = true;
-                contatoToggle.setAttribute("aria-expanded", "false");
-
-            }
-
-        });
-
-    }
-
+document.addEventListener('DOMContentLoaded', () => {
+  const header = document.querySelector('[data-header]');
+  const toggle = document.querySelector('[data-menu-toggle]');
+  const nav = document.querySelector('[data-nav]');
+  const setHeader = () => header.classList.toggle('is-scrolled', window.scrollY > 16);
+  setHeader(); window.addEventListener('scroll', setHeader, { passive: true });
+  toggle?.addEventListener('click', () => { const open = nav.classList.toggle('is-open'); toggle.setAttribute('aria-expanded', String(open)); toggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu'); });
+  nav?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => { nav.classList.remove('is-open'); toggle?.setAttribute('aria-expanded', 'false'); }));
+  document.querySelectorAll('.ano').forEach(el => el.textContent = new Date().getFullYear());
+  const cards = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => entries.forEach((entry, index) => { if (entry.isIntersecting) { entry.target.style.transitionDelay = `${index * 80}ms`; entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }), { threshold: .15 });
+  cards.forEach(card => observer.observe(card));
 });

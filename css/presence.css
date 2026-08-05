@@ -1,0 +1,71 @@
+.presence {
+  position: relative;
+  isolation: isolate;
+  min-height: 630px;
+  color: #fff;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+}
+
+.presence-media,
+.presence-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.presence-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.presence-shade {
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(4, 15, 23, .86) 0%, rgba(4, 15, 23, .64) 42%, rgba(4, 15, 23, .18) 78%);
+}
+
+.presence-content {
+  padding: 5.5rem 0;
+  max-width: 1180px;
+}
+
+.presence-mark {
+  width: 62px;
+  height: auto;
+  display: block;
+  margin-bottom: 1.75rem;
+}
+
+.presence h2 {
+  max-width: 720px;
+  margin: 0;
+  font: 800 clamp(2.65rem, 5vw, 5rem)/1.04 Manrope, sans-serif;
+  letter-spacing: -.055em;
+}
+
+.presence-content > p:not(.eyebrow) {
+  max-width: 560px;
+  margin: 1.4rem 0 1.9rem;
+  color: #d2e1e2;
+  font-size: 1.08rem;
+}
+
+.presence .text-link {
+  color: #9cf2e6;
+}
+
+@media (max-width: 800px) {
+  .presence { min-height: 590px; }
+  .presence-media img { object-position: 63% center; }
+  .presence-shade { background: linear-gradient(90deg, rgba(4, 15, 23, .89), rgba(4, 15, 23, .55)); }
+}
+
+@media (max-width: 520px) {
+  .presence { min-height: 640px; }
+  .presence-media img { object-position: 68% center; }
+  .presence-shade { background: rgba(4, 15, 23, .72); }
+  .presence-content { padding: 4.5rem 0; }
+}

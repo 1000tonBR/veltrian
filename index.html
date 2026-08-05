@@ -1,113 +1,80 @@
-<!DOCTYPE html>
-
+<!doctype html>
 <html lang="pt-BR">
-
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Petit Biscuit</title>
-
-<link rel="icon" href="img/favicon.png">
-
-<link rel="stylesheet" href="css/style.css">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Veltrian: performance industrial, supply chain e inteligência de negócios para operações mais eficientes.">
+  <meta name="theme-color" content="#071724">
+  <title>Veltrian | Performance Industrial &amp; Business</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/logo.css">
+  <link rel="stylesheet" href="css/presence.css">
 </head>
-
 <body>
-
-<header>
-
-    <div class="container">
-
-        <a href="#" class="logo">
-
-            <img src="img/logo-white.png" alt="Petit Biscuit">
-
-        </a>
-
-        <nav>
-
-            <a href="catalogo.html">Catálogos</a>
-
-            <a href="https://www.instagram.com/petitbiscuit.oficial/" target="_blank">Instagram</a>
-
-            <button class="contato-toggle" type="button" aria-expanded="false" aria-controls="contato-balao">Contato</button>
-
-            <div class="contato-balao" id="contato-balao" hidden>
-
-                <strong>Taísa Stamboroski</strong>
-
-                <a href="mailto:contato@petitbiscuit.com.br">contato@petitbiscuit.com.br</a>
-
-                <a href="tel:+5516999619400">+55 16 99961-9400</a>
-
-            </div>
-
-        </nav>
-
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <header class="site-header" data-header>
+    <div class="container nav-wrap">
+      <a class="brand" href="#inicio" aria-label="Veltrian, início">
+        <img class="brand-mark" src="img/veltrian-mark.png" alt="" aria-hidden="true">
+        <span>VELTRIAN</span>
+      </a>
+      <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-principal" data-menu-toggle><span></span><span></span></button>
+      <nav id="menu-principal" class="main-nav" aria-label="Navegação principal" data-nav>
+        <a href="#sobre">A Veltrian</a><a href="#solucoes">Soluções</a><a href="#metodo">Como atuamos</a><a href="#contato" class="nav-cta">Vamos conversar <span aria-hidden="true">↗</span></a>
+      </nav>
     </div>
+  </header>
 
-</header>
-
-<main>
-
-    <section class="catalogo">
-
-        <div class="container">
-
-            <p class="destaque">Destaque especial</p>
-
-            <h1>Catálogo Dia dos Pais</h1>
-
-            <iframe src="pdf/pais.pdf" title="Catálogo Dia dos Pais"></iframe>
-
-            <a class="mobileButton" href="pdf/pais.pdf" target="_blank">
-
-                Abrir Catálogo Dia dos Pais
-
-            </a>
-
-        </div>
-
+  <main id="conteudo">
+    <section class="hero" id="inicio">
+      <div class="hero-grid" aria-hidden="true"></div><div class="hero-orb orb-one" aria-hidden="true"></div><div class="hero-orb orb-two" aria-hidden="true"></div>
+      <div class="container hero-content">
+        <p class="eyebrow">Performance industrial &amp; business</p>
+        <h1>Clareza para decidir.<br><em>Eficiência para crescer.</em></h1>
+        <p class="hero-lead">Transformamos operações complexas em resultados consistentes, conectando estratégia, processos e dados.</p>
+        <div class="hero-actions"><a class="button button-primary" href="#contato">Fale com a Veltrian <span aria-hidden="true">↗</span></a><a class="text-link" href="#solucoes">Conheça nossas soluções <span aria-hidden="true">↓</span></a></div>
+      </div>
+      <div class="hero-footer container"><span>Estratégia · Operações · Dados</span><span class="scroll-cue">Role para explorar <i aria-hidden="true"></i></span></div>
     </section>
 
-</main>
+    <section class="intro section" id="sobre">
+      <div class="container split-layout">
+        <div><p class="eyebrow teal">A Veltrian</p><h2>Decisões melhores começam com uma operação que faz sentido.</h2></div>
+        <div class="intro-copy"><p>Somos uma consultoria de performance industrial e gestão de negócios. Atuamos ao lado de líderes que buscam ganhos sustentáveis, com uma visão integrada de pessoas, processos e tecnologia.</p><a class="text-link dark" href="#metodo">Nossa forma de atuar <span aria-hidden="true">↗</span></a></div>
+      </div>
+    </section>
 
-<footer>
+    <section class="solutions section section-dark" id="solucoes">
+      <div class="container"><div class="section-heading"><div><p class="eyebrow">Soluções sob medida</p><h2>Do diagnóstico à transformação.</h2></div><p>Foco no que realmente move a sua operação: produtividade, fluxo, previsibilidade e geração de valor.</p></div>
+        <div class="service-grid">
+          <article class="service-card reveal"><span class="service-number">01</span><div class="service-icon" aria-hidden="true">↗</div><h3>Performance industrial</h3><p>Processos mais eficientes, indicadores que direcionam e uma rotina de melhoria contínua.</p></article>
+          <article class="service-card reveal"><span class="service-number">02</span><div class="service-icon" aria-hidden="true">⌁</div><h3>Supply chain</h3><p>Uma cadeia conectada, com maior nível de serviço, equilíbrio de estoques e agilidade.</p></article>
+          <article class="service-card reveal"><span class="service-number">03</span><div class="service-icon" aria-hidden="true">⊞</div><h3>Planejamento de materiais</h3><p>Mais confiança para planejar demanda, materiais, capacidade e prioridades de produção.</p></article>
+          <article class="service-card reveal"><span class="service-number">04</span><div class="service-icon" aria-hidden="true">◫</div><h3>Business intelligence</h3><p>Dados claros, painéis relevantes e decisões orientadas por informação confiável.</p></article>
+        </div>
+      </div>
+    </section>
 
-<div class="footer-container">
+    <section class="method section" id="metodo"><div class="container"><p class="eyebrow teal">Como atuamos</p><div class="section-heading method-heading"><h2>Uma parceria que transforma intenção em resultado.</h2><p>Unimos profundidade analítica e execução prática para gerar avanços percebidos no dia a dia da operação.</p></div><ol class="steps"><li><span>01</span><div><h3>Entendemos o contexto</h3><p>Escuta, diagnóstico e leitura objetiva dos desafios.</p></div></li><li><span>02</span><div><h3>Construímos o caminho</h3><p>Prioridades, metas e um plano aplicável à realidade do negócio.</p></div></li><li><span>03</span><div><h3>Implementamos juntos</h3><p>Ritmo de execução, acompanhamento e autonomia para o time.</p></div></li></ol></div></section>
 
-<p>
+    <section class="presence" aria-labelledby="presenca-titulo">
+      <div class="presence-media"><img src="img/veltrian-ambiente.png" alt="Ambiente corporativo contemporâneo com sala de reuniões"></div>
+      <div class="presence-shade" aria-hidden="true"></div>
+      <div class="container presence-content">
+        <img class="presence-mark" src="img/veltrian-mark.png" alt="">
+        <p class="eyebrow">Estratégia que se vê na prática</p>
+        <h2 id="presenca-titulo">Uma visão que conecta pessoas, processos e resultado.</h2>
+        <p>Ambientes de alta performance nascem de decisões claras, execução consistente e parceiros que entendem a realidade do negócio.</p>
+        <a class="text-link" href="#metodo">Conheça nossa forma de atuar <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
 
-Endereço: Matão - SP |
-
-© Todos os direitos reservados. 2026 |
-
-Telefone: (16) 99961-9400 |
-
-<a href="mailto:contato@petitbiscuit.com.br">
-
-contato@petitbiscuit.com.br
-
-</a>
-
-</p>
-
-<p class="footer-small">
-
-Eventuais promoções, descontos e prazos de pagamento expostos neste site são válidos apenas para compras via internet. As fotos, textos e layout aqui veiculados são de propriedade da Petit Biscuit. É proibida a utilização total ou parcial sem prévia autorização.
-
-</p>
-
-</div>
-
-</footer>
-
-<script src="js/script.js"></script>
-
+    <section class="cta-section" id="contato"><div class="container cta-box"><p class="eyebrow">Vamos conversar</p><h2>O próximo resultado pode começar agora.</h2><p>Conte o que a sua operação precisa resolver. A Veltrian ajuda a transformar desafios em direção.</p><a class="button button-light" href="mailto:joaopaulo@veltrian.com.br">joaopaulo@veltrian.com.br <span aria-hidden="true">↗</span></a></div></section>
+  </main>
+  <footer><div class="container footer-wrap"><a class="brand" href="#inicio" aria-label="Voltar ao início"><img class="brand-mark" src="img/veltrian-mark.png" alt="" aria-hidden="true"><span>VELTRIAN</span></a><p>Performance Industrial &amp; Business</p><p>© <span class="ano"></span> Veltrian. Todos os direitos reservados.</p></div></footer>
+  <script src="js/script.js"></script>
 </body>
-
 </html>
