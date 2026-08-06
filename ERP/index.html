@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071724">
+  <meta name="description" content="Veltrian ERP — sistema de compras.">
+  <title>Veltrian ERP | Compras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-pending">
+  <section class="auth-gate" data-auth-gate aria-labelledby="login-title">
+    <form class="login-card" data-login-form>
+      <a class="erp-brand login-brand" href="../" aria-label="Voltar ao site da Veltrian"><span class="brand-symbol">V</span><span>VELTRIAN</span></a>
+      <p class="kicker aqua">ERP · Compras</p>
+      <h1 id="login-title">Acesse sua conta</h1>
+      <p>Entre com seu e-mail corporativo para acessar o sistema de compras.</p>
+      <label>E-mail<input name="email" type="email" autocomplete="email" required placeholder="nome@veltrian.com.br"></label>
+      <label>Senha<input name="password" type="password" autocomplete="current-password" required placeholder="Sua senha"></label>
+      <p class="form-message" data-login-message role="alert"></p>
+      <button class="primary-button" type="submit">Entrar no ERP</button>
+      <a class="back-link login-back" href="../">← Voltar ao site</a>
+    </form>
+  </section>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="erp-brand" href="../" aria-label="Voltar ao site da Veltrian"><span class="brand-symbol">V</span><span>VELTRIAN</span></a>
+      <p class="app-label">ERP · Compras</p>
+      <nav class="side-nav" aria-label="Navegação do ERP">
+        <a class="active" href="#visao-geral">Visão geral</a>
+        <a href="#solicitacoes">Solicitações</a>
+        <a href="#fornecedores">Fornecedores</a>
+        <a href="#relatorios">Relatórios</a>
+      </nav>
+      <a class="back-link" href="../">← Voltar ao site</a>
+    </aside>
+
+    <main class="content" id="visao-geral">
+      <header class="topbar"><div><p class="kicker">Central de compras</p><h1>Olá, <span data-user-name>usuário</span>.</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" type="button" data-sign-out aria-label="Sair do ERP">Sair</button></div></header>
+
+      <section class="welcome-panel">
+        <div><p class="kicker aqua">Visão do dia</p><h2>Compras com mais clareza e controle.</h2><p>Centralize as necessidades da operação, acompanhe aprovações e mantenha os fornecedores em um só lugar.</p></div>
+        <button class="primary-button" type="button" data-open-form>+ Nova solicitação</button>
+      </section>
+
+      <section class="metrics" aria-label="Indicadores de compras">
+        <article><p>Solicitações abertas</p><strong id="open-count">3</strong><span>+1 nesta semana</span></article>
+        <article><p>Aguardando aprovação</p><strong>2</strong><span>Prioridade para hoje</span></article>
+        <article><p>Fornecedores ativos</p><strong>12</strong><span>Base em crescimento</span></article>
+        <article><p>Economia estimada</p><strong>8,4%</strong><span>vs. último período</span></article>
+      </section>
+
+      <section class="table-section" id="solicitacoes">
+        <div class="section-title"><div><p class="kicker">Solicitações recentes</p><h2>Acompanhe o que está em andamento</h2></div><button class="text-button" type="button" data-open-form>Nova solicitação →</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Solicitação</th><th>Categoria</th><th>Solicitante</th><th>Valor estimado</th><th>Status</th></tr></thead><tbody id="request-list"><tr><td>#CP-1048 · Insumos de produção</td><td>Materiais</td><td>Mariana Costa</td><td>R$ 18.500</td><td><span class="status pending">Em cotação</span></td></tr><tr><td>#CP-1047 · Serviços de manutenção</td><td>Serviços</td><td>Lucas Mendes</td><td>R$ 9.800</td><td><span class="status approval">Aprovação</span></td></tr><tr><td>#CP-1046 · Equipamentos de segurança</td><td>Operação</td><td>Rafael Lima</td><td>R$ 6.200</td><td><span class="status approved">Aprovada</span></td></tr></tbody></table></div>
+      </section>
+
+      <section class="lower-grid"><article id="fornecedores"><p class="kicker">Fornecedores</p><h2>Base qualificada</h2><p>Cadastre fornecedores, acompanhe cotações e mantenha critérios claros de escolha.</p><a href="#fornecedores">Gerenciar fornecedores →</a></article><article id="relatorios"><p class="kicker">Próximo passo</p><h2>Decida com dados</h2><p>Relatórios de prazo, economia e desempenho vão compor esta área.</p><a href="#relatorios">Ver relatórios →</a></article></section>
+    </main>
+  </div>
+
+  <dialog class="request-dialog" data-form-dialog aria-labelledby="dialog-title">
+    <form method="dialog" id="purchase-form"><button class="close-button" type="button" data-close-form aria-label="Fechar">×</button><p class="kicker aqua">Nova solicitação</p><h2 id="dialog-title">O que precisamos comprar?</h2><label>Descrição<input name="description" required placeholder="Ex.: Materiais para manutenção preventiva"></label><label>Categoria<select name="category"><option>Materiais</option><option>Serviços</option><option>Operação</option><option>Tecnologia</option></select></label><label>Valor estimado<input name="value" inputmode="decimal" required placeholder="Ex.: 15000"></label><button class="primary-button" type="submit">Adicionar solicitação</button></form>
+  </dialog>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
