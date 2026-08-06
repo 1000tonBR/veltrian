@@ -1,0 +1,17 @@
+.contact-button {
+  min-width: min(100%, 285px);
+  justify-content: space-between;
+  text-align: left;
+}
+
+.contact-details {
+  display: grid;
+  gap: .12rem;
+  line-height: 1.25;
+}
+
+.contact-details span:last-child {
+  color: #15515a;
+  font-size: .78rem;
+  font-weight: 600;
+}
