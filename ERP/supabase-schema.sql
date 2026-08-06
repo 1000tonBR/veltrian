@@ -9,7 +9,11 @@ exception
   when duplicate_object then null;
 end $$;
 
-create type public.purchase_status as enum ('rascunho', 'em_cotacao', 'em_aprovacao', 'aprovada', 'reprovada', 'concluida');
+do $$ begin
+  create type public.purchase_status as enum ('rascunho', 'em_cotacao', 'em_aprovacao', 'aprovada', 'reprovada', 'concluida');
+exception
+  when duplicate_object then null;
+end $$;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -70,6 +74,15 @@ alter table public.suppliers enable row level security;
 alter table public.purchase_requests enable row level security;
 alter table public.quotes enable row level security;
 alter table public.approvals enable row level security;
+
+drop policy if exists "authenticated users read profiles" on public.profiles;
+drop policy if exists "users update own profile" on public.profiles;
+drop policy if exists "authenticated users read suppliers" on public.suppliers;
+drop policy if exists "authenticated users read requests" on public.purchase_requests;
+drop policy if exists "users create own requests" on public.purchase_requests;
+drop policy if exists "authenticated users update requests" on public.purchase_requests;
+drop policy if exists "authenticated users read quotes" on public.quotes;
+drop policy if exists "authenticated users read approvals" on public.approvals;
 
 create policy "authenticated users read profiles" on public.profiles for select to authenticated using (true);
 create policy "users update own profile" on public.profiles for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
