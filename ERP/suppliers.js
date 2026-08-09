@@ -1,4 +1,4 @@
-const client = window.erpSupabase;
+const supplierClient = window.erpSupabase;
 const notice = document.querySelector('[data-notice]');
 const showNotice = (text, type = 'success') => { notice.textContent = text; notice.dataset.type = type; };
 let suppliers = [];
@@ -9,7 +9,7 @@ function renderSuppliers(entries = suppliers) {
 }
 
 async function loadSuppliers() {
-  const { data, error } = await client.from('suppliers').select('*').order('legal_name');
+  const { data, error } = await supplierClient.from('suppliers').select('*').order('legal_name');
   if (error) return showNotice(`Não foi possível carregar os fornecedores: ${error.message}`, 'error');
   suppliers = data || []; renderSuppliers();
 }
@@ -18,7 +18,7 @@ document.querySelector('[data-supplier-form]').addEventListener('submit', async 
   event.preventDefault();
   const values = Object.fromEntries(new FormData(event.currentTarget));
   Object.keys(values).forEach((key) => { if (values[key] === '') values[key] = null; });
-  const { error } = await client.from('suppliers').insert(values);
+  const { error } = await supplierClient.from('suppliers').insert(values);
   if (error) return showNotice(`Fornecedor não salvo: ${error.message}`, 'error');
   event.currentTarget.reset(); showNotice('Fornecedor cadastrado com sucesso.'); loadSuppliers();
 });
