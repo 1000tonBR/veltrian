@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Veltrian ERP | RCs</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="modules.css">
+</head>
+<body class="auth-pending">
+  <section class="auth-gate"><form class="login-card" data-login-form>
+    <p class="kicker aqua">ERP · Compras</p><h1>Acesse sua conta</h1>
+    <label>E-mail<input name="email" type="email" required></label>
+    <label>Senha<input name="password" type="password" required></label>
+    <p class="form-message" data-login-message role="alert"></p><button class="primary-button">Entrar no ERP</button>
+  </form></section>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="erp-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="app-label">ERP · Compras</p>
+      <nav class="side-nav"><a href="index.html">Visão geral</a><a class="active" href="rc.html">RCs</a><a href="approvals.html">Aprovação de pedidos</a><a href="suppliers.html">Fornecedores</a></nav><a class="back-link" href="../">← Voltar ao site</a>
+    </aside>
+    <main class="content">
+      <header class="topbar"><div><p class="kicker">Requisições de compra</p><h1>RCs, itens e atividades</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" data-sign-out>Sair</button></div></header>
+      <p class="notice" data-notice aria-live="polite"></p>
+      <div class="module-tabs"><button class="active" data-tab="rcs">RCs</button><button data-tab="items">Itens</button><button data-tab="activities">Atividades</button></div>
+
+      <section class="module-panel active" data-panel="rcs">
+        <div class="module-grid">
+          <form class="form-card" data-rc-form>
+            <p class="kicker aqua">Nova requisição</p><h2>Criar RC</h2>
+            <div class="form-grid">
+              <label class="full">Item<select name="item_id" data-rc-item required><option value="">Carregando itens…</option></select></label>
+              <label>Quantidade<input name="quantity" type="number" min="0.001" step="0.001" required></label>
+              <label>Prioridade<select name="priority" required><option value="normal">Normal</option><option value="baixa">Baixa</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+              <label class="full">Atividade<select name="activity_id" data-rc-activity><option value="">Sem atividade vinculada</option></select></label>
+              <label class="full">Observações<textarea name="notes" placeholder="Informações necessárias para a compra"></textarea></label>
+            </div><div class="form-actions"><button class="primary-button">Criar RC</button></div>
+          </form>
+          <div class="catalog-card"><p class="kicker">Consulta de RC</p><h2>Requisições abertas</h2><div class="table-wrap"><table><thead><tr><th>RC</th><th>Item</th><th>Qtd.</th><th>Prioridade</th><th>Atividade</th><th>Status</th></tr></thead><tbody data-requests-rows><tr><td colspan="6" class="empty-cell">Carregando RCs…</td></tr></tbody></table></div></div>
+        </div>
+      </section>
+
+      <section class="module-panel" data-panel="items"><div class="module-grid">
+        <form class="form-card" data-item-form><p class="kicker aqua">Cadastro de item</p><h2>Novo item</h2><div class="form-grid">
+          <label class="full">Descrição<input name="description" placeholder="Ex.: Correia industrial" required></label><label>Qtd.<input name="quantity" type="number" min="0.001" step="0.001" placeholder="Ex.: 4"></label><label>Fabricante<input name="manufacturer" placeholder="Ex.: Gates"></label><label>Número de série<input name="serial_number" placeholder="Opcional"></label><label class="full">Observações<textarea name="notes" placeholder="Características, especificações ou observações"></textarea></label>
+        </div><div class="form-actions"><button class="primary-button">Salvar item</button></div></form>
+        <div class="catalog-card"><p class="kicker">Consulta</p><h2>Itens cadastrados</h2><div class="table-wrap"><table><thead><tr><th>Descrição</th><th>Qtd.</th><th>Fabricante</th><th>Nº série</th><th>Obs.</th></tr></thead><tbody data-items-rows><tr><td colspan="5" class="empty-cell">Carregando itens…</td></tr></tbody></table></div></div>
+      </div></section>
+
+      <section class="module-panel" data-panel="activities"><div class="module-grid">
+        <form class="form-card" data-activity-form><p class="kicker aqua">Cadastro de atividade</p><h2>Nova atividade</h2><div class="form-grid"><label>Código<input name="code" placeholder="Ex.: MAN-010" required></label><label class="full">Descrição<textarea name="description" placeholder="Ex.: Manutenção preventiva" required></textarea></label></div><div class="form-actions"><button class="primary-button">Salvar atividade</button></div></form>
+        <div class="catalog-card"><p class="kicker">Consulta</p><h2>Atividades cadastradas</h2><div class="table-wrap"><table><thead><tr><th>Código</th><th>Descrição</th></tr></thead><tbody data-activities-rows><tr><td colspan="2" class="empty-cell">Carregando atividades…</td></tr></tbody></table></div></div>
+      </div></section>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="modules.js"></script>
+</body></html>
