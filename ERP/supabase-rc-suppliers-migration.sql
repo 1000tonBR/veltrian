@@ -1,6 +1,8 @@
 -- Veltrian ERP · RCs, itens, atividades e cadastro de fornecedores
 -- Execute no Supabase: SQL Editor > New query > Run.
 
+create extension if not exists pgcrypto;
+
 create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
