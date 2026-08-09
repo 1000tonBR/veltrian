@@ -4,6 +4,11 @@ const showNotice = (text, type = 'success') => {
   if (!notice) return;
   notice.textContent = text;
   notice.dataset.type = type;
+  notice.classList.add('is-visible');
+};
+const refreshAfterSuccess = (text) => {
+  showNotice(text);
+  window.setTimeout(() => window.location.reload(), 1300);
 };
 
 document.querySelectorAll('[data-tab]').forEach((button) => button.addEventListener('click', () => {
@@ -57,7 +62,7 @@ document.querySelector('[data-item-form]')?.addEventListener('submit', async (ev
   const payload = { description: form.get('description'), default_quantity: Number(form.get('quantity')) || null, manufacturer: form.get('manufacturer') || null, serial_number: form.get('serial_number') || null, notes: form.get('notes') || null };
   const { error } = await moduleClient.from('items').insert(payload);
   if (error) return showNotice(`Item não salvo: ${error.message}`, 'error');
-  event.currentTarget.reset(); showNotice('Item cadastrado com sucesso.'); loadItems();
+  event.currentTarget.reset(); refreshAfterSuccess('Item salvo com sucesso. Atualizando os dados…');
 });
 
 document.querySelector('[data-activity-form]')?.addEventListener('submit', async (event) => {
@@ -65,7 +70,7 @@ document.querySelector('[data-activity-form]')?.addEventListener('submit', async
   const form = new FormData(event.currentTarget);
   const { error } = await moduleClient.from('activities').insert({ code: String(form.get('code')).trim().toUpperCase(), description: form.get('description') });
   if (error) return showNotice(`Atividade não salva: ${error.message}`, 'error');
-  event.currentTarget.reset(); showNotice('Atividade cadastrada com sucesso.'); loadActivities();
+  event.currentTarget.reset(); refreshAfterSuccess('Atividade salva com sucesso. Atualizando os dados…');
 });
 
 document.querySelector('[data-rc-form]')?.addEventListener('submit', async (event) => {
@@ -78,7 +83,7 @@ document.querySelector('[data-rc-form]')?.addEventListener('submit', async (even
   if (error) return showNotice(`RC não criada: ${error.message}`, 'error');
   const { error: lineError } = await moduleClient.from('purchase_request_items').insert({ purchase_request_id: rc.id, item_id: form.get('item_id'), quantity: Number(form.get('quantity')), notes: form.get('notes') || null });
   if (lineError) return showNotice(`A RC foi criada, mas o item não foi vinculado: ${lineError.message}`, 'error');
-  event.currentTarget.reset(); showNotice('RC criada com sucesso.'); loadRequests();
+  event.currentTarget.reset(); refreshAfterSuccess('RC salva com sucesso. Atualizando os dados…');
 });
 
 Promise.all([loadItems(), loadActivities()]).then(loadRequests);

@@ -7,19 +7,24 @@ const formKicker = document.querySelector('[data-form-kicker]');
 let suppliers = [];
 let editingId = null;
 
-const showNotice = (text, type = 'success') => { notice.textContent = text; notice.dataset.type = type; };
+const showNotice = (text, type = 'success') => { notice.textContent = text; notice.dataset.type = type; notice.classList.add('is-visible'); };
+const refreshAfterSuccess = (text) => {
+  showNotice(text);
+  window.setTimeout(() => window.location.reload(), 1300);
+};
 const escapeHtml = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 
 function renderSuppliers(entries = suppliers) {
   const body = document.querySelector('[data-suppliers-rows]');
   body.innerHTML = entries.length ? entries.map((supplier) => `<tr>
-    <td>${escapeHtml(supplier.legal_name)}</td><td>${escapeHtml(supplier.tax_id)}</td>
+    <td>${supplier.supplier_number ? `FOR-${String(supplier.supplier_number).padStart(4, '0')}` : '—'}</td>
+    <td>${escapeHtml(supplier.legal_name)}</td><td>${escapeHtml(supplier.business_sector)}</td><td>${escapeHtml(supplier.tax_id)}</td>
     <td>${escapeHtml(supplier.contact_name || supplier.contact_email)}</td>
     <td>${escapeHtml([supplier.city, supplier.state].filter(Boolean).join('/') || '—')}</td>
     <td>${escapeHtml(supplier.payment_terms)}</td>
     <td><span class="status ${supplier.active ? 'approved' : 'pending'}">${supplier.active ? 'Ativo' : 'Inativo'}</span></td>
     <td class="table-actions"><button type="button" class="row-button" data-edit-supplier="${supplier.id}">Editar</button><button type="button" class="row-button danger" data-delete-supplier="${supplier.id}">Excluir</button></td>
-  </tr>`).join('') : '<tr><td colspan="7" class="empty-cell">Nenhum fornecedor encontrado.</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="9" class="empty-cell">Nenhum fornecedor encontrado.</td></tr>';
 }
 
 async function loadSuppliers() {
@@ -54,8 +59,7 @@ async function deleteSupplier(id) {
   const { error } = await supplierClient.from('suppliers').delete().eq('id', id);
   if (error) return showNotice(`Fornecedor não excluído: ${error.message}`, 'error');
   if (editingId === id) resetForm();
-  showNotice('Fornecedor excluído com sucesso.');
-  loadSuppliers();
+  refreshAfterSuccess('Fornecedor excluído com sucesso. Atualizando os dados…');
 }
 
 form.addEventListener('submit', async (event) => {
@@ -67,9 +71,9 @@ form.addEventListener('submit', async (event) => {
     : supplierClient.from('suppliers').insert(values);
   const { error } = await request;
   if (error) return showNotice(`Fornecedor não salvo: ${error.message}`, 'error');
-  showNotice(editingId ? 'Fornecedor atualizado com sucesso.' : 'Fornecedor cadastrado com sucesso.');
+  const message = editingId ? 'Fornecedor atualizado com sucesso. Atualizando os dados…' : 'Fornecedor salvo com sucesso. Atualizando os dados…';
   resetForm();
-  loadSuppliers();
+  refreshAfterSuccess(message);
 });
 
 document.querySelector('[data-suppliers-rows]').addEventListener('click', (event) => {
@@ -82,7 +86,11 @@ document.querySelector('[data-suppliers-rows]').addEventListener('click', (event
 cancelButton.addEventListener('click', resetForm);
 document.querySelector('[data-supplier-filter]').addEventListener('input', (event) => {
   const term = event.target.value.trim().toLocaleLowerCase('pt-BR');
-  renderSuppliers(suppliers.filter((supplier) => [supplier.legal_name, supplier.trade_name, supplier.tax_id, supplier.city].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term))));
+  renderSuppliers(suppliers.filter((supplier) => {
+    const code = supplier.supplier_number ? `for-${String(supplier.supplier_number).padStart(4, '0')}` : '';
+    return [code, supplier.supplier_number, supplier.legal_name, supplier.trade_name, supplier.business_sector, supplier.tax_id, supplier.city]
+      .some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term));
+  }));
 });
 
 loadSuppliers();
