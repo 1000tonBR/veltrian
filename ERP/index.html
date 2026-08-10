@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="navigation.css">
 </head>
 <body class="auth-pending">
   <section class="auth-gate" data-auth-gate aria-labelledby="login-title">
@@ -31,11 +32,9 @@
       <p class="app-label">ERP · Compras</p>
       <nav class="side-nav" aria-label="Navegação do ERP">
         <a class="active" href="#visao-geral">Visão geral</a>
-        <a href="rc.html">RCs</a>
+        <a href="rc.html">Requisições de compra</a>
         <a href="materials.html">Materiais</a>
-        <a href="approvals.html">Aprovação de pedidos</a>
-        <a href="suppliers.html">Fornecedores</a>
-        <a href="#relatorios">Relatórios</a>
+        <a href="suppliers.html">Fornecedor</a>
       </nav>
       <a class="back-link" href="../">← Voltar ao site</a>
     </aside>
@@ -49,14 +48,14 @@
 
       <section class="metrics" aria-label="Indicadores de compras">
         <article><p>Solicitações abertas</p><strong id="open-count">3</strong><span>+1 nesta semana</span></article>
-        <article><p>Aguardando aprovação</p><strong>2</strong><span>Prioridade para hoje</span></article>
+        <article><p>RCs abertas</p><strong>2</strong><span>Prioridade para hoje</span></article>
         <article><p>Fornecedores ativos</p><strong>12</strong><span>Base em crescimento</span></article>
         <article><p>Economia estimada</p><strong>8,4%</strong><span>vs. último período</span></article>
       </section>
 
       <section class="table-section" id="solicitacoes">
         <div class="section-title"><div><p class="kicker">Solicitações recentes</p><h2>Acompanhe o que está em andamento</h2></div><button class="text-button" type="button" data-open-form>Nova solicitação →</button></div>
-        <div class="table-wrap"><table><thead><tr><th>Solicitação</th><th>Categoria</th><th>Solicitante</th><th>Valor estimado</th><th>Status</th></tr></thead><tbody id="request-list"><tr><td>#CP-1048 · Insumos de produção</td><td>Materiais</td><td>Mariana Costa</td><td>R$ 18.500</td><td><span class="status pending">Em cotação</span></td></tr><tr><td>#CP-1047 · Serviços de manutenção</td><td>Serviços</td><td>Lucas Mendes</td><td>R$ 9.800</td><td><span class="status approval">Aprovação</span></td></tr><tr><td>#CP-1046 · Equipamentos de segurança</td><td>Operação</td><td>Rafael Lima</td><td>R$ 6.200</td><td><span class="status approved">Aprovada</span></td></tr></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Solicitação</th><th>Categoria</th><th>Solicitante</th><th>Valor estimado</th><th>Status</th></tr></thead><tbody id="request-list"><tr><td>#CP-1048 · Insumos de produção</td><td>Materiais</td><td>Mariana Costa</td><td>R$ 18.500</td><td><span class="status pending">Em cotação</span></td></tr><tr><td>#CP-1047 · Serviços de manutenção</td><td>Serviços</td><td>Lucas Mendes</td><td>R$ 9.800</td><td><span class="status pending">Em cotação</span></td></tr><tr><td>#CP-1046 · Equipamentos de segurança</td><td>Operação</td><td>Rafael Lima</td><td>R$ 6.200</td><td><span class="status approved">Concluída</span></td></tr></tbody></table></div>
       </section>
 
       <section class="lower-grid"><article id="fornecedores"><p class="kicker">Fornecedores</p><h2>Base qualificada</h2><p>Cadastre fornecedores, acompanhe cotações e mantenha critérios claros de escolha.</p><a href="#fornecedores">Gerenciar fornecedores →</a></article><article id="relatorios"><p class="kicker">Próximo passo</p><h2>Decida com dados</h2><p>Relatórios de prazo, economia e desempenho vão compor esta área.</p><a href="#relatorios">Ver relatórios →</a></article></section>

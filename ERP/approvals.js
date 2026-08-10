@@ -1,6 +1,0 @@
-const client=window.erpSupabase,form=document.querySelector('[data-login-form]'),message=document.querySelector('[data-login-message]');
-const login=messageText=>{document.body.classList.remove('auth-pending','authenticated');document.body.classList.add('login-required');message.textContent=messageText||''};
-const enter=user=>{document.body.classList.remove('auth-pending','login-required');document.body.classList.add('authenticated');document.querySelector('[data-user-email]').textContent=user.email||''};
-form.addEventListener('submit',async e=>{e.preventDefault();const v=new FormData(form),{data,error}=await client.auth.signInWithPassword({email:v.get('email'),password:v.get('password')});if(error)return login('E-mail ou senha inválidos.');enter(data.user)});
-document.querySelector('[data-sign-out]').addEventListener('click',async()=>{await client.auth.signOut();login()});client.auth.getSession().then(({data:{session}})=>session?.user?enter(session.user):login());
-document.querySelectorAll('[data-decision]').forEach(b=>b.addEventListener('click',()=>{b.closest('.action-cell').innerHTML=`<span class="status ${b.dataset.decision==='aprovar'?'approved':'pending'}">${b.dataset.decision==='aprovar'?'Aprovado':'Reprovado'}</span>`}));
