@@ -22,16 +22,15 @@ const setRows = (selector, rows, empty, render) => {
   body.innerHTML = rows.length ? rows.map(render).join('') : `<tr><td colspan="10" class="empty-cell">${empty}</td></tr>`;
 };
 
-let items = [];
+let materials = [];
 let activities = [];
 
-async function loadItems() {
+async function loadMaterials() {
   const { data, error } = await moduleClient.from('items').select('*').order('description');
-  if (error) return showNotice(`Não foi possível carregar os itens: ${error.message}`, 'error');
-  items = data || [];
-  setRows('[data-items-rows]', items, 'Nenhum item cadastrado.', (item) => `<tr><td>${item.description}</td><td>${item.default_quantity ?? '—'}</td><td>${item.manufacturer || '—'}</td><td>${item.serial_number || '—'}</td><td>${item.notes || '—'}</td></tr>`);
+  if (error) return showNotice(`Não foi possível carregar os materiais: ${error.message}`, 'error');
+  materials = data || [];
   const select = document.querySelector('[data-rc-item]');
-  if (select) select.innerHTML = `<option value="">Selecione um item</option>${items.map((item) => `<option value="${item.id}">${item.description}</option>`).join('')}`;
+  if (select) select.innerHTML = `<option value="">Selecione um material</option>${materials.map((material) => `<option value="${material.id}">${material.material_number ? `MAT-${String(material.material_number).padStart(4, '0')} · ` : ''}${material.description}</option>`).join('')}`;
 }
 
 async function loadActivities() {
@@ -56,15 +55,6 @@ async function loadRequests() {
   });
 }
 
-document.querySelector('[data-item-form]')?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const form = new FormData(event.currentTarget);
-  const payload = { description: form.get('description'), default_quantity: Number(form.get('quantity')) || null, manufacturer: form.get('manufacturer') || null, serial_number: form.get('serial_number') || null, notes: form.get('notes') || null };
-  const { error } = await moduleClient.from('items').insert(payload);
-  if (error) return showNotice(`Item não salvo: ${error.message}`, 'error');
-  event.currentTarget.reset(); refreshAfterSuccess('Item salvo com sucesso. Atualizando os dados…');
-});
-
 document.querySelector('[data-activity-form]')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
@@ -78,12 +68,12 @@ document.querySelector('[data-rc-form]')?.addEventListener('submit', async (even
   const form = new FormData(event.currentTarget);
   const { data: { user } } = await moduleClient.auth.getUser();
   if (!user) return showNotice('Sua sessão expirou. Entre novamente.', 'error');
-  const item = items.find((entry) => entry.id === form.get('item_id'));
-  const { data: rc, error } = await moduleClient.from('purchase_requests').insert({ title: item?.description || 'Requisição de compra', description: form.get('notes') || null, category: 'Compras', estimated_value: 0, requested_by: user.id, priority: form.get('priority'), activity_id: form.get('activity_id') || null }).select('id').single();
+  const material = materials.find((entry) => entry.id === form.get('item_id'));
+  const { data: rc, error } = await moduleClient.from('purchase_requests').insert({ title: material?.description || 'Requisição de compra', description: form.get('notes') || null, category: 'Compras', estimated_value: 0, requested_by: user.id, priority: form.get('priority'), activity_id: form.get('activity_id') || null }).select('id').single();
   if (error) return showNotice(`RC não criada: ${error.message}`, 'error');
   const { error: lineError } = await moduleClient.from('purchase_request_items').insert({ purchase_request_id: rc.id, item_id: form.get('item_id'), quantity: Number(form.get('quantity')), notes: form.get('notes') || null });
-  if (lineError) return showNotice(`A RC foi criada, mas o item não foi vinculado: ${lineError.message}`, 'error');
+  if (lineError) return showNotice(`A RC foi criada, mas o material não foi vinculado: ${lineError.message}`, 'error');
   event.currentTarget.reset(); refreshAfterSuccess('RC salva com sucesso. Atualizando os dados…');
 });
 
-Promise.all([loadItems(), loadActivities()]).then(loadRequests);
+Promise.all([loadMaterials(), loadActivities()]).then(loadRequests);

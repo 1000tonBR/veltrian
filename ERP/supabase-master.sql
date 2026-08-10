@@ -4,6 +4,7 @@
 
 create extension if not exists pgcrypto;
 create sequence if not exists public.supplier_number_seq;
+create sequence if not exists public.material_number_seq;
 
 do $$ begin
   create type public.app_role as enum ('administrador', 'comprador', 'solicitante');
@@ -33,6 +34,7 @@ create table if not exists public.activities (
 
 create table if not exists public.items (
   id uuid primary key default gen_random_uuid(),
+  material_number bigint not null default nextval('public.material_number_seq'::regclass) unique,
   description text not null,
   manufacturer text,
   serial_number text,
@@ -41,6 +43,18 @@ create table if not exists public.items (
   active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+alter table public.items add column if not exists material_number bigint;
+alter table public.items alter column material_number set default nextval('public.material_number_seq'::regclass);
+update public.items set material_number = nextval('public.material_number_seq'::regclass) where material_number is null;
+create unique index if not exists items_material_number_unique on public.items (material_number);
+
+do $$
+declare highest_material_number bigint;
+begin
+  select max(material_number) into highest_material_number from public.items;
+  if highest_material_number is not null then perform setval('public.material_number_seq', highest_material_number, true); end if;
+end $$;
 
 create table if not exists public.suppliers (
   id uuid primary key default gen_random_uuid(),
