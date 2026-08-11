@@ -49,6 +49,14 @@ function updateRequestSummary() {
   document.querySelector('[data-request-summary]').innerHTML = request ? `<strong>${quoteRcCode(request.request_number)}</strong><span>${quoteMaterialCode(request)} · ${escapeQuote(quoteMaterial(request))}</span><span>Atividade: ${escapeQuote(quoteActivity(request))}</span>` : 'Selecione uma requisição para ver o material e a atividade.';
 }
 
+function renderRequestOptions(selectedRequestId = '') {
+  const quotedRequestIds = new Set(quotes.map((quote) => quote.purchase_request_id));
+  const availableRequests = quoteRequests.filter((request) => !quotedRequestIds.has(request.id) || request.id === selectedRequestId);
+  const emptyLabel = availableRequests.length ? 'Selecione uma requisição' : 'Nenhuma requisição pendente de cotação';
+  requestSelect.innerHTML = `<option value="">${emptyLabel}</option>${availableRequests.map((request) => `<option value="${request.id}">${quoteRcCode(request.request_number)} · ${escapeQuote(quoteMaterial(request))}</option>`).join('')}`;
+  requestSelect.value = selectedRequestId;
+}
+
 function renderQuotes(entries = quotes) {
   const lowestByRequest = new Map();
   quotes.forEach((quote) => lowestByRequest.set(quote.purchase_request_id, Math.min(lowestByRequest.get(quote.purchase_request_id) ?? Infinity, Number(quote.net_value))));
@@ -68,7 +76,6 @@ async function loadQuoteReferences() {
   if (requestsResult.error) showQuoteNotice(`Não foi possível carregar as requisições: ${requestsResult.error.message}`, 'error');
   if (suppliersResult.error) showQuoteNotice(`Não foi possível carregar os fornecedores: ${suppliersResult.error.message}`, 'error');
   quoteRequests = requestsResult.data || []; quoteSuppliers = suppliersResult.data || [];
-  requestSelect.innerHTML = `<option value="">Selecione uma requisição</option>${quoteRequests.map((request) => `<option value="${request.id}">${quoteRcCode(request.request_number)} · ${escapeQuote(quoteMaterial(request))}</option>`).join('')}`; renderQuoteOptions();
 }
 
 async function loadQuotes() {
@@ -77,13 +84,13 @@ async function loadQuotes() {
 }
 
 function resetQuoteForm() {
-  editingRequestId = null; quoteForm.reset(); requestSelect.disabled = false; renderQuoteOptions(); updateRequestSummary();
+  editingRequestId = null; quoteForm.reset(); requestSelect.disabled = false; renderRequestOptions(); renderQuoteOptions(); updateRequestSummary();
   document.querySelector('[data-quote-kicker]').textContent = 'Nova cotação'; document.querySelector('[data-save-quote]').textContent = 'Salvar cotação'; quoteCancel.hidden = true;
 }
 
 function editQuote(requestId) {
   const group = quotes.filter((quote) => quote.purchase_request_id === requestId).sort((a, b) => Number(a.net_value) - Number(b.net_value)); if (!group.length) return;
-  editingRequestId = requestId; requestSelect.value = requestId; requestSelect.disabled = true; renderQuoteOptions(group); updateRequestSummary();
+  editingRequestId = requestId; renderRequestOptions(requestId); requestSelect.disabled = true; renderQuoteOptions(group); updateRequestSummary();
   document.querySelector('[data-quote-kicker]').textContent = `Edição da cotação ${quoteRcCode(group[0].request?.request_number || '')}`; document.querySelector('[data-save-quote]').textContent = 'Salvar alterações'; quoteCancel.hidden = false; quoteForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -118,4 +125,8 @@ quoteForm.addEventListener('submit', async (event) => {
 document.querySelector('[data-quotes-rows]').addEventListener('click', (event) => { const edit = event.target.closest('[data-edit-quote]'); const remove = event.target.closest('[data-delete-quote]'); if (edit) editQuote(edit.dataset.editQuote); if (remove) deleteQuoteGroup(remove.dataset.deleteQuote); });
 document.querySelector('[data-quote-filter]').addEventListener('input', (event) => { const term = event.target.value.trim().toLocaleLowerCase('pt-BR'); renderQuotes(quotes.filter((quote) => [quoteRcCode(quote.request?.request_number || ''), quoteMaterialCode(quote.request), quoteMaterial(quote.request), quoteActivity(quote.request), quote.supplier?.legal_name].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term)))); });
 
-Promise.all([loadQuoteReferences(), loadQuotes()]);
+Promise.all([loadQuoteReferences(), loadQuotes()]).then(() => {
+  renderRequestOptions();
+  renderQuoteOptions();
+  updateRequestSummary();
+});

@@ -31,7 +31,7 @@
               <label class="full">Observações<textarea name="notes" placeholder="Informações necessárias para a compra"></textarea></label>
             </div><div class="form-actions"><button class="primary-button" data-save-rc>Salvar requisição</button><button class="secondary-button" type="button" data-cancel-rc hidden>Cancelar edição</button></div>
           </form>
-          <div class="catalog-card"><p class="kicker">Consulta de RC</p><h2>Requisições cadastradas</h2><input class="table-filter" data-rc-filter placeholder="Filtrar por código, material ou atividade"><div class="table-wrap"><table><thead><tr><th>RC</th><th>Material</th><th>Qtd.</th><th>Prioridade</th><th>Atividade</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody data-requests-rows><tr><td colspan="8" class="empty-cell">Carregando requisições…</td></tr></tbody></table></div></div>
+          <div class="catalog-card"><p class="kicker">Consulta de RC</p><h2>Requisições cadastradas</h2><div class="status-legend" aria-label="Legenda dos status"><span><i class="legend-dot pending"></i>Sem pedido emitido</span><span><i class="legend-dot issued"></i>Pedido emitido</span><span><i class="legend-dot cancelled"></i>Pedido cancelado</span></div><input class="table-filter" data-rc-filter placeholder="Filtrar por RC, pedido, código do material, material, atividade ou usuário"><div class="table-wrap"><table><thead><tr><th>RC</th><th>Pedido</th><th>Cód. material</th><th>Material</th><th>Qtd.</th><th>Prioridade</th><th>Atividade</th><th>Usuário</th><th>Situação</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody data-requests-rows><tr><td colspan="11" class="empty-cell">Carregando requisições…</td></tr></tbody></table></div></div>
         </div>
       </section>
 

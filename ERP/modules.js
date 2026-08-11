@@ -12,6 +12,8 @@ let noticeTimer;
 const escapeHtml = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 const formatDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
 const rcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
+const materialCode = (number) => number ? `MAT-${String(number).padStart(4, '0')}` : '—';
+const orderCode = (number) => number ? `PC-${String(number).padStart(4, '0')}` : '—';
 
 function showNotice(text, type = 'success') {
   if (!moduleNotice) return;
@@ -51,10 +53,13 @@ function renderRequests(entries = requests) {
   setRows('[data-requests-rows]', entries, 'Nenhuma requisição criada até o momento.', (rc) => {
     const line = rc.lines?.[0];
     const material = line?.item?.description || 'Material removido';
+    const requester = rc.requester?.full_name || rc.requester?.email || 'Usuário removido';
     const activity = rc.activity ? `${rc.activity.code} · ${rc.activity.description}` : '—';
-    const status = String(rc.status || '').replaceAll('_', ' ');
-    return `<tr><td>${rcCode(rc.request_number)}</td><td>${escapeHtml(material)}</td><td>${escapeHtml(line?.quantity)}</td><td><span class="priority ${escapeHtml(rc.priority)}">${escapeHtml(rc.priority)}</span></td><td>${escapeHtml(activity)}</td><td class="status-cell">${escapeHtml(status)}</td><td>${formatDate(rc.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-rc="${rc.id}">Editar</button><button type="button" class="row-button danger" data-delete-rc="${rc.id}">Excluir</button></td></tr>`;
-  }, 8);
+    const order = [...(rc.orders || [])].sort((a, b) => Number(b.order_number) - Number(a.order_number))[0];
+    const isCancelled = order?.status === 'cancelado';
+    const workflowStatus = order ? (isCancelled ? '<span class="status cancelled">Pedido cancelado</span>' : '<span class="status issued">Pedido emitido</span>') : '<span class="status pending">Sem pedido emitido</span>';
+    return `<tr class="${order && !isCancelled ? 'order-issued-row' : ''}"><td>${rcCode(rc.request_number)}</td><td><strong>${orderCode(order?.order_number)}</strong></td><td>${materialCode(line?.item?.material_number)}</td><td>${escapeHtml(material)}</td><td>${escapeHtml(line?.quantity)}</td><td><span class="priority ${escapeHtml(rc.priority)}">${escapeHtml(rc.priority)}</span></td><td>${escapeHtml(activity)}</td><td>${escapeHtml(requester)}</td><td>${workflowStatus}</td><td>${formatDate(rc.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-rc="${rc.id}">Editar</button><button type="button" class="row-button danger" data-delete-rc="${rc.id}">Excluir</button></td></tr>`;
+  }, 11);
 }
 
 async function loadMaterials() {
@@ -75,7 +80,7 @@ async function loadActivities() {
 }
 
 async function loadRequests() {
-  const { data, error } = await moduleClient.from('purchase_requests').select('id, request_number, title, description, priority, status, activity_id, created_at, activity:activities(code,description), lines:purchase_request_items(id,item_id,quantity,notes,item:items(id,description,material_number))').order('created_at', { ascending: false });
+  const { data, error } = await moduleClient.from('purchase_requests').select('id, request_number, title, description, priority, status, activity_id, requested_by, created_at, requester:profiles!purchase_requests_requested_by_fkey(full_name,email), activity:activities(code,description), lines:purchase_request_items(id,item_id,quantity,notes,item:items(id,description,material_number)), orders:purchase_orders!purchase_orders_purchase_request_id_fkey(order_number,status,created_at)').order('created_at', { ascending: false });
   if (error) return showNotice(`Não foi possível carregar as requisições: ${error.message}`, 'error');
   requests = data || [];
   renderRequests();
@@ -173,7 +178,7 @@ rcCancel?.addEventListener('click', resetRcForm); activityCancel?.addEventListen
 
 document.querySelector('[data-rc-filter]')?.addEventListener('input', (event) => {
   const term = event.target.value.trim().toLocaleLowerCase('pt-BR');
-  renderRequests(requests.filter((rc) => [rcCode(rc.request_number), rc.request_number, rc.lines?.[0]?.item?.description, rc.activity?.code, rc.activity?.description].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term))));
+  renderRequests(requests.filter((rc) => [rcCode(rc.request_number), rc.request_number, ...((rc.orders || []).flatMap((order) => [orderCode(order.order_number), order.order_number, order.status])), materialCode(rc.lines?.[0]?.item?.material_number), rc.lines?.[0]?.item?.material_number, rc.lines?.[0]?.item?.description, rc.activity?.code, rc.activity?.description, rc.requester?.full_name, rc.requester?.email].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term))));
 });
 document.querySelector('[data-activity-filter]')?.addEventListener('input', (event) => {
   const term = event.target.value.trim().toLocaleLowerCase('pt-BR');
