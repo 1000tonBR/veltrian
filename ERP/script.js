@@ -48,7 +48,7 @@ form.addEventListener('submit', (event) => {
   const category = data.get('category');
   const value = Number(String(data.get('value')).replace(',', '.')) || 0;
   const row = document.createElement('tr');
-  row.innerHTML = `<td>#CP-${1050 + requestList.children.length} · ${description}</td><td>${category}</td><td>${userName.textContent}</td><td>${value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td><span class="status pending">Em cotação</span></td>`;
+  row.innerHTML = `<td>#CP-${1050 + requestList.children.length} · ${description}</td><td>${category}</td><td>${userName.textContent}</td><td>${value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td><span class="status pending">Em cotação</span></td><td>${new Date().toLocaleDateString('pt-BR')}</td>`;
   requestList.prepend(row);
   openCount.textContent = String(Number(openCount.textContent) + 1);
   form.reset();

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veltrian ERP | Pedidos</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="navigation.css"><link rel="stylesheet" href="modules.css"></head>
+<body class="auth-pending">
+  <section class="auth-gate"><form class="login-card" data-login-form><p class="kicker aqua">ERP · Compras</p><h1>Acesse sua conta</h1><label>E-mail<input name="email" type="email" required></label><label>Senha<input name="password" type="password" required></label><p class="form-message" data-login-message role="alert"></p><button class="primary-button">Entrar no ERP</button></form></section>
+  <div class="app-shell"><aside class="sidebar"><a class="erp-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="app-label">ERP · Compras</p><nav class="side-nav" aria-label="Navegação do ERP"><a href="index.html">Visão geral</a><a href="rc.html">Requisições de compra</a><a href="materials.html">Materiais</a><a href="suppliers.html">Fornecedor</a><a href="quotes.html">Cotações</a><a class="active" href="orders.html">Pedidos</a></nav><a class="back-link" href="../">← Voltar ao site</a></aside>
+    <main class="content"><header class="topbar"><div><p class="kicker">Formalização da compra</p><h1>Pedidos</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" data-sign-out>Sair</button></div></header>
+      <div class="database-toast" data-notice aria-live="assertive" role="status"></div>
+      <div class="module-grid supplier-grid">
+        <form class="form-card" data-order-form><input type="hidden" name="record_id"><p class="kicker aqua" data-order-kicker>Novo pedido</p><h2>Pedido de compra</h2><div class="form-grid">
+          <label class="full">Cotação vencedora<select name="quote_id" data-order-quote required><option value="">Carregando cotações…</option></select></label>
+          <label>Condição de pagamento<input name="payment_terms" placeholder="Ex.: 28 dias"></label><label>Previsão de entrega<input name="expected_delivery_date" type="date"></label>
+          <label>Status<select name="status"><option value="rascunho">Rascunho</option><option value="enviado">Enviado</option><option value="recebido">Recebido</option><option value="cancelado">Cancelado</option></select></label>
+          <label class="full">Observações<textarea name="notes" placeholder="Condições e observações do pedido"></textarea></label>
+        </div><div class="order-summary" data-order-summary>Selecione uma cotação vencedora.</div><div class="form-actions"><button class="primary-button" data-save-order>Salvar pedido</button><button class="secondary-button" type="button" data-cancel-order hidden>Cancelar edição</button></div></form>
+        <div class="catalog-card"><p class="kicker">Consulta</p><h2>Pedidos emitidos</h2><input class="table-filter" data-order-filter placeholder="Filtrar por pedido, RC, material ou fornecedor"><div class="table-wrap"><table><thead><tr><th>Pedido</th><th>RC</th><th>Fornecedor</th><th>Material</th><th>Total</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody data-orders-rows><tr><td colspan="8" class="empty-cell">Carregando pedidos…</td></tr></tbody></table></div></div>
+      </div>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="orders.js"></script>
+</body></html>

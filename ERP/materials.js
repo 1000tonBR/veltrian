@@ -10,13 +10,14 @@ let editingMaterialId = null;
 const showMaterialNotice = (text, type = 'success') => { materialNotice.textContent = text; materialNotice.dataset.type = type; materialNotice.classList.add('is-visible'); };
 const refreshMaterials = (text) => { showMaterialNotice(text); window.setTimeout(() => window.location.reload(), 1300); };
 const escapeMaterial = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
+const formatMaterialDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
 
 function renderMaterials(entries = materials) {
   const body = document.querySelector('[data-materials-rows]');
   body.innerHTML = entries.length ? entries.map((material) => `<tr>
     <td>${material.material_number ? `MAT-${String(material.material_number).padStart(4, '0')}` : '—'}</td><td>${escapeMaterial(material.description)}</td><td>${escapeMaterial(material.default_quantity)}</td><td>${escapeMaterial(material.manufacturer)}</td><td>${escapeMaterial(material.serial_number)}</td>
-    <td><span class="status ${material.active ? 'approved' : 'pending'}">${material.active ? 'Ativo' : 'Inativo'}</span></td><td class="table-actions"><button type="button" class="row-button" data-edit-material="${material.id}">Editar</button><button type="button" class="row-button danger" data-delete-material="${material.id}">Excluir</button></td>
-  </tr>`).join('') : '<tr><td colspan="7" class="empty-cell">Nenhum material encontrado.</td></tr>';
+    <td><span class="status ${material.active ? 'approved' : 'pending'}">${material.active ? 'Ativo' : 'Inativo'}</span></td><td>${formatMaterialDate(material.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-material="${material.id}">Editar</button><button type="button" class="row-button danger" data-delete-material="${material.id}">Excluir</button></td>
+  </tr>`).join('') : '<tr><td colspan="8" class="empty-cell">Nenhum material encontrado.</td></tr>';
 }
 
 async function loadMaterials() {

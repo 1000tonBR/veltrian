@@ -13,6 +13,7 @@ const refreshAfterSuccess = (text) => {
   window.setTimeout(() => window.location.reload(), 1300);
 };
 const escapeHtml = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
+const formatSupplierDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
 
 function renderSuppliers(entries = suppliers) {
   const body = document.querySelector('[data-suppliers-rows]');
@@ -23,8 +24,9 @@ function renderSuppliers(entries = suppliers) {
     <td>${escapeHtml([supplier.city, supplier.state].filter(Boolean).join('/') || '—')}</td>
     <td>${escapeHtml(supplier.payment_terms)}</td>
     <td><span class="status ${supplier.active ? 'approved' : 'pending'}">${supplier.active ? 'Ativo' : 'Inativo'}</span></td>
+    <td>${formatSupplierDate(supplier.created_at)}</td>
     <td class="table-actions"><button type="button" class="row-button" data-edit-supplier="${supplier.id}">Editar</button><button type="button" class="row-button danger" data-delete-supplier="${supplier.id}">Excluir</button></td>
-  </tr>`).join('') : '<tr><td colspan="9" class="empty-cell">Nenhum fornecedor encontrado.</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="10" class="empty-cell">Nenhum fornecedor encontrado.</td></tr>';
 }
 
 async function loadSuppliers() {

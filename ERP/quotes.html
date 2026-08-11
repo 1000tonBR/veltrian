@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veltrian ERP | Cotações</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="navigation.css"><link rel="stylesheet" href="modules.css"></head>
+<body class="auth-pending">
+  <section class="auth-gate"><form class="login-card" data-login-form><p class="kicker aqua">ERP · Compras</p><h1>Acesse sua conta</h1><label>E-mail<input name="email" type="email" required></label><label>Senha<input name="password" type="password" required></label><p class="form-message" data-login-message role="alert"></p><button class="primary-button">Entrar no ERP</button></form></section>
+  <div class="app-shell"><aside class="sidebar"><a class="erp-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="app-label">ERP · Compras</p><nav class="side-nav" aria-label="Navegação do ERP"><a href="index.html">Visão geral</a><a href="rc.html">Requisições de compra</a><a href="materials.html">Materiais</a><a href="suppliers.html">Fornecedor</a><a class="active" href="quotes.html">Cotações</a><a href="orders.html">Pedidos</a></nav><a class="back-link" href="../">← Voltar ao site</a></aside>
+    <main class="content"><header class="topbar"><div><p class="kicker">Comparativo comercial</p><h1>Cotações</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" data-sign-out>Sair</button></div></header>
+      <div class="database-toast" data-notice aria-live="assertive" role="status"></div>
+      <div class="module-grid quote-layout">
+        <form class="form-card" data-quote-form><p class="kicker aqua" data-quote-kicker>Nova cotação</p><h2>Comparar três fornecedores</h2>
+          <div class="form-grid"><label class="full">Requisição de compra<select name="purchase_request_id" data-quote-request required><option value="">Carregando requisições…</option></select></label></div>
+          <div class="request-summary" data-request-summary>Selecione uma requisição para ver o material e a atividade.</div>
+          <div class="quote-options" data-quote-options></div>
+          <div class="form-actions"><button class="primary-button" data-save-quote>Salvar cotação</button><button class="secondary-button" type="button" data-cancel-quote hidden>Cancelar edição</button></div>
+        </form>
+        <div class="catalog-card"><p class="kicker">Consulta</p><h2>Mapa de cotações</h2><input class="table-filter" data-quote-filter placeholder="Filtrar por RC, material, atividade ou fornecedor"><div class="table-wrap"><table><thead><tr><th>RC</th><th>Material</th><th>Fornecedor</th><th>Preço</th><th>Desconto</th><th>Líquido</th><th>Resultado</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody data-quotes-rows><tr><td colspan="9" class="empty-cell">Carregando cotações…</td></tr></tbody></table></div></div>
+      </div>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="quotes.js"></script>
+</body></html>
