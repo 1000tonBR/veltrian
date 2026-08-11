@@ -1,5 +1,5 @@
 -- VELTRIAN ERP | Evolucao do fluxo de compras
--- Atividades/RCs -> Cotacoes (3 fornecedores) -> Pedidos de compra
+-- Atividades/RCs -> Cotacoes -> Pedidos de compra
 
 alter table public.activities add column if not exists updated_at timestamptz not null default now();
 alter table public.items add column if not exists updated_at timestamptz not null default now();
