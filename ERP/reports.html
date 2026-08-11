@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Veltrian ERP | Relatórios</title>
+  <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="navigation.css"><link rel="stylesheet" href="modules.css">
+</head>
+<body class="auth-pending">
+  <section class="auth-gate"><form class="login-card" data-login-form><p class="kicker aqua">ERP · Compras</p><h1>Acesse sua conta</h1><label>E-mail<input name="email" type="email" required></label><label>Senha<input name="password" type="password" required></label><p class="form-message" data-login-message role="alert"></p><button class="primary-button">Entrar no ERP</button></form></section>
+  <div class="app-shell">
+    <aside class="sidebar"><a class="erp-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="app-label">ERP · Compras</p><nav class="side-nav" aria-label="Navegação do ERP"><a href="index.html">Visão geral</a><a href="rc.html">Requisições de compra</a><a href="quotes.html">Cotações</a><a href="orders.html">Pedidos</a><a class="active" href="reports.html">Relatórios</a><span class="nav-divider" role="separator"></span><a href="materials.html">Materiais</a><a href="suppliers.html">Fornecedor</a></nav><a class="back-link" href="../">← Voltar ao site</a></aside>
+    <main class="content report-content">
+      <header class="topbar"><div><p class="kicker">Inteligência de compras</p><h1>Relatórios</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" data-sign-out>Sair</button></div></header>
+      <div class="database-toast" data-notice aria-live="assertive" role="status"></div>
+
+      <section class="report-intro"><div><p class="kicker aqua">Análise dinâmica</p><h2>Encontre custos, compras e descontos sob qualquer perspectiva.</h2><p>Combine os filtros para analisar períodos, atividades, materiais, fornecedores, responsáveis e condições comerciais.</p></div><button class="primary-button export-button" type="button" data-export-report>Exportar para Excel</button></section>
+
+      <form class="report-filters" data-report-filters>
+        <div class="report-filter-heading"><div><p class="kicker">Filtros combináveis</p><h2>Refine a análise</h2></div><button class="secondary-button" type="reset">Limpar filtros</button></div>
+        <div class="report-filter-grid">
+          <label class="filter-wide">Busca geral<input name="search" placeholder="Pedido, RC, material, fornecedor, atividade ou usuário"></label>
+          <label>Compra de<input name="date_start" type="date"></label><label>Compra até<input name="date_end" type="date"></label>
+          <label>Atividade<select name="activity"><option value="">Todas</option></select></label><label>Fornecedor<select name="supplier"><option value="">Todos</option></select></label>
+          <label>Ramo do fornecedor<select name="business_sector"><option value="">Todos</option></select></label><label>Material<select name="material"><option value="">Todos</option></select></label>
+          <label>Solicitante<select name="requester"><option value="">Todos</option></select></label><label>Comprador<select name="buyer"><option value="">Todos</option></select></label>
+          <label>Prioridade<select name="priority"><option value="">Todas</option><option value="baixa">Baixa</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+          <label>Status do pedido<select name="status"><option value="">Todos</option><option value="rascunho">Rascunho</option><option value="em_aprovacao">Em aprovação</option><option value="aprovado">Aprovado</option><option value="enviado">Enviado</option><option value="recebido">Recebido</option><option value="cancelado">Cancelado</option></select></label>
+          <label>Frete<select name="freight"><option value="">Todos</option><option value="CIF">CIF</option><option value="FOB">FOB</option><option value="sem_frete">Não informado</option></select></label>
+          <label>Emissão do PDF<select name="pdf_status"><option value="">Todos</option><option value="sent">PDF emitido</option><option value="pending">PDF pendente</option></select></label>
+          <label>Condição de pagamento<input name="payment_terms" placeholder="Ex.: 28 dias"></label><label>Entrega até<input name="delivery_end" type="date"></label>
+          <label>Valor líquido mínimo<input name="net_min" type="number" min="0" step="0.01" placeholder="R$ 0,00"></label><label>Valor líquido máximo<input name="net_max" type="number" min="0" step="0.01" placeholder="Sem limite"></label>
+          <label>Desconto mínimo<input name="discount_min" type="number" min="0" step="0.01" placeholder="R$ 0,00"></label><label>Desconto mínimo (%)<input name="discount_percent_min" type="number" min="0" max="100" step="0.01" placeholder="0%"></label>
+        </div>
+      </form>
+
+      <section class="report-metrics" aria-label="Resumo do relatório">
+        <article><p>Pedidos encontrados</p><strong data-report-count>0</strong><span>registros filtrados</span></article>
+        <article><p>Custo bruto</p><strong data-report-gross>R$ 0,00</strong><span>antes dos descontos</span></article>
+        <article><p>Desconto obtido</p><strong data-report-discount>R$ 0,00</strong><span data-report-discount-rate>0,00% do bruto</span></article>
+        <article><p>Custo líquido</p><strong data-report-net>R$ 0,00</strong><span data-report-average>ticket médio R$ 0,00</span></article>
+      </section>
+
+      <section class="report-section"><div class="section-title"><div><p class="kicker">Detalhamento</p><h2>Pedidos filtrados</h2></div><span class="report-result-count" data-result-label>0 registros</span></div><div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Data</th><th>RC</th><th>Atividade</th><th>Material</th><th>Fornecedor</th><th>Ramo</th><th>Solicitante</th><th>Comprador</th><th>Bruto</th><th>Desconto</th><th>Líquido</th><th>Frete</th><th>Pagamento</th><th>Entrega</th><th>Status</th></tr></thead><tbody data-report-details><tr><td colspan="16" class="empty-cell">Carregando dados…</td></tr></tbody></table></div></section>
+
+      <div class="report-analysis-grid">
+        <section class="report-section"><div class="section-title"><div><p class="kicker">Centro de custo</p><h2>Custo por atividade</h2></div></div><div class="table-wrap"><table><thead><tr><th>Atividade</th><th>Pedidos</th><th>Bruto</th><th>Desconto</th><th>Líquido</th></tr></thead><tbody data-report-activities></tbody></table></div></section>
+        <section class="report-section"><div class="section-title"><div><p class="kicker">Concentração</p><h2>Compras por fornecedor</h2></div></div><div class="table-wrap"><table><thead><tr><th>Fornecedor</th><th>Pedidos</th><th>Comprado</th><th>Participação</th></tr></thead><tbody data-report-suppliers></tbody></table></div></section>
+        <section class="report-section"><div class="section-title"><div><p class="kicker">Economia</p><h2>Desconto por fornecedor</h2></div></div><div class="table-wrap"><table><thead><tr><th>Fornecedor</th><th>Bruto</th><th>Desconto</th><th>Percentual</th></tr></thead><tbody data-report-discounts></tbody></table></div></section>
+        <section class="report-section"><div class="section-title"><div><p class="kicker">Evolução</p><h2>Compras por período</h2></div></div><div class="table-wrap"><table><thead><tr><th>Período</th><th>Pedidos</th><th>Desconto</th><th>Líquido</th></tr></thead><tbody data-report-periods></tbody></table></div></section>
+      </div>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0"></script><script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="reports.js"></script>
+</body>
+</html>
