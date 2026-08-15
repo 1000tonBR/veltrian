@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Veltrian ERP | Aprovações</title>
+  <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="navigation.css"><link rel="stylesheet" href="modules.css"><link rel="stylesheet" href="approvals.css">
+</head>
+<body class="auth-pending">
+  <section class="auth-gate"><form class="login-card" data-login-form><p class="kicker aqua">ERP · Compras</p><h1>Acesse sua conta</h1><label>E-mail<input name="email" type="email" required></label><label>Senha<input name="password" type="password" required></label><p class="form-message" data-login-message role="alert"></p><button class="primary-button">Entrar no ERP</button></form></section>
+  <div class="app-shell">
+    <aside class="sidebar"><a class="erp-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="app-label">ERP · Compras</p><nav class="side-nav" aria-label="Navegação do ERP"><a href="index.html">Visão geral</a><a href="dashboard.html">Dashboard</a><a href="rc.html">Requisições de compra</a><a href="quotes.html">Cotações</a><a href="orders.html">Pedidos</a><a class="active" href="approvals.html">Aprovações</a><a href="reports.html">Relatórios</a><span class="nav-divider" role="separator"></span><a href="materials.html">Materiais</a><a href="suppliers.html">Fornecedor</a><a href="clients.html">Clientes</a></nav><a class="back-link" href="../">← Voltar ao site</a></aside>
+    <main class="content approval-content">
+      <header class="topbar"><div><p class="kicker">Governança de compras</p><h1>Aprovações</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" data-sign-out>Sair</button></div></header>
+      <div class="database-toast" data-notice aria-live="assertive" role="status"></div>
+
+      <section class="approval-summary" aria-label="Resumo das aprovações">
+        <article><p>Aguardando decisão</p><strong data-approval-pending>0</strong><span>pedidos na fila</span></article>
+        <article><p>Aprovados</p><strong data-approval-approved>0</strong><span>PDF liberado</span></article>
+        <article><p>Rejeitados</p><strong data-approval-rejected>0</strong><span>retornaram para pedidos</span></article>
+      </section>
+
+      <section class="catalog-card approval-list">
+        <div class="approval-heading"><div><p class="kicker aqua">Fila de decisão</p><h2>Pedidos submetidos</h2></div><p data-approval-access></p></div>
+        <div class="approval-filters"><select data-approval-status aria-label="Filtrar por situação"><option value="em_aprovacao">Aguardando aprovação</option><option value="">Todas as situações</option><option value="aprovado">Aprovados</option><option value="reprovado">Rejeitados</option><option value="enviado">PDF emitido</option></select><input class="table-filter" data-approval-filter placeholder="Buscar por pedido, RC, material ou fornecedor"></div>
+        <div class="table-wrap"><table><thead><tr><th>Pedido</th><th>RC</th><th>Fornecedor</th><th>Material</th><th>Total</th><th>Solicitante</th><th>Comprador</th><th>Status</th><th>Cadastro</th><th>Análise</th></tr></thead><tbody data-approvals-rows><tr><td colspan="10" class="empty-cell">Carregando pedidos…</td></tr></tbody></table></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog class="approval-dialog" data-approval-dialog>
+    <button class="close-button" type="button" data-close-approval aria-label="Fechar">×</button>
+    <div class="approval-dialog-header"><p class="kicker aqua">Análise do pedido</p><h2 data-approval-title>Pedido</h2><div data-approval-detail-summary></div></div>
+    <section><p class="kicker">Mapa comercial</p><h3>Cotações recebidas</h3><div class="approval-quotes" data-approval-quotes></div></section>
+    <section class="approval-reason" data-approval-reason-section hidden><p class="kicker">Decisão comercial</p><h3>Motivo da escolha</h3><p data-approval-selection-reason></p></section>
+    <section class="approval-history" data-approval-history-section hidden><p class="kicker">Última decisão</p><h3 data-approval-history-title></h3><p data-approval-history-text></p></section>
+    <label class="approval-comments" data-approval-comments-wrap>Comentário da aprovação<textarea data-approval-comments placeholder="Opcional ao aprovar; obrigatório ao rejeitar"></textarea></label>
+    <div class="approval-dialog-actions" data-approval-actions><button class="secondary-button reject-button" type="button" data-reject-order>Rejeitar pedido</button><button class="primary-button" type="button" data-approve-order>Aprovar e liberar PDF</button></div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="approvals.js"></script>
+</body>
+</html>

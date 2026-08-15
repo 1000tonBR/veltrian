@@ -56,9 +56,10 @@ function renderRequests(entries = requests) {
     const requester = rc.requester?.full_name || rc.requester?.email || 'Usuário removido';
     const activity = rc.activity ? `${rc.activity.code} · ${rc.activity.description}` : '—';
     const order = [...(rc.orders || [])].sort((a, b) => Number(b.order_number) - Number(a.order_number))[0];
-    const isCancelled = order?.status === 'cancelado';
-    const workflowStatus = order ? (isCancelled ? '<span class="status cancelled">Pedido cancelado</span>' : '<span class="status issued">Pedido emitido</span>') : '<span class="status pending">Sem pedido emitido</span>';
-    return `<tr class="${order && !isCancelled ? 'order-issued-row' : ''}"><td>${rcCode(rc.request_number)}</td><td><strong>${orderCode(order?.order_number)}</strong></td><td>${materialCode(line?.item?.material_number)}</td><td>${escapeHtml(material)}</td><td>${escapeHtml(line?.quantity)}</td><td><span class="priority ${escapeHtml(rc.priority)}">${escapeHtml(rc.priority)}</span></td><td>${escapeHtml(activity)}</td><td>${escapeHtml(requester)}</td><td>${workflowStatus}</td><td>${formatDate(rc.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-rc="${rc.id}">Editar</button><button type="button" class="row-button danger" data-delete-rc="${rc.id}">Excluir</button></td></tr>`;
+    const statuses = { rascunho: '<span class="status pending">Pedido em preparação</span>', em_aprovacao: '<span class="status approval">Em aprovação</span>', aprovado: '<span class="status approved">Pedido aprovado</span>', reprovado: '<span class="status rejected">Pedido rejeitado</span>', enviado: '<span class="status issued">Pedido emitido</span>', recebido: '<span class="status issued">Pedido recebido</span>', cancelado: '<span class="status cancelled">Pedido cancelado</span>' };
+    const workflowStatus = order ? statuses[order.status] || `<span class="status pending">${escapeHtml(order.status)}</span>` : '<span class="status pending">Sem pedido emitido</span>';
+    const completed = order && ['aprovado','enviado','recebido'].includes(order.status);
+    return `<tr class="${completed ? 'order-issued-row' : ''}"><td>${rcCode(rc.request_number)}</td><td><strong>${orderCode(order?.order_number)}</strong></td><td>${materialCode(line?.item?.material_number)}</td><td>${escapeHtml(material)}</td><td>${escapeHtml(line?.quantity)}</td><td><span class="priority ${escapeHtml(rc.priority)}">${escapeHtml(rc.priority)}</span></td><td>${escapeHtml(activity)}</td><td>${escapeHtml(requester)}</td><td>${workflowStatus}</td><td>${formatDate(rc.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-rc="${rc.id}">Editar</button><button type="button" class="row-button danger" data-delete-rc="${rc.id}">Excluir</button></td></tr>`;
   }, 11);
 }
 
@@ -176,9 +177,26 @@ document.querySelector('[data-requests-rows]')?.addEventListener('click', (event
 });
 rcCancel?.addEventListener('click', resetRcForm); activityCancel?.addEventListener('click', resetActivityForm);
 
-document.querySelector('[data-rc-filter]')?.addEventListener('input', (event) => {
-  const term = event.target.value.trim().toLocaleLowerCase('pt-BR');
-  renderRequests(requests.filter((rc) => [rcCode(rc.request_number), rc.request_number, ...((rc.orders || []).flatMap((order) => [orderCode(order.order_number), order.order_number, order.status])), materialCode(rc.lines?.[0]?.item?.material_number), rc.lines?.[0]?.item?.material_number, rc.lines?.[0]?.item?.description, rc.activity?.code, rc.activity?.description, rc.requester?.full_name, rc.requester?.email].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term))));
+const rcFilterInput = document.querySelector('[data-rc-filter]');
+const rcFilterField = document.querySelector('[data-rc-filter-field]');
+const rcFilterPlaceholders = { all: 'Digite para pesquisar nas requisições', material: 'Digite a descrição do material', rc: 'Digite o número da RC', requester: 'Digite o nome do requisitante' };
+
+function applyRcFilter() {
+  const term = rcFilterInput?.value.trim().toLocaleLowerCase('pt-BR') || '';
+  const field = rcFilterField?.value || 'all';
+  const fieldsFor = (rc) => ({
+    rc: [rcCode(rc.request_number), rc.request_number],
+    material: [rc.lines?.[0]?.item?.description],
+    requester: [rc.requester?.full_name, rc.requester?.email],
+    all: [rcCode(rc.request_number), rc.request_number, ...((rc.orders || []).flatMap((order) => [orderCode(order.order_number), order.order_number, order.status])), materialCode(rc.lines?.[0]?.item?.material_number), rc.lines?.[0]?.item?.material_number, rc.lines?.[0]?.item?.description, rc.activity?.code, rc.activity?.description, rc.requester?.full_name, rc.requester?.email]
+  });
+  renderRequests(requests.filter((rc) => fieldsFor(rc)[field].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term))));
+}
+
+rcFilterInput?.addEventListener('input', applyRcFilter);
+rcFilterField?.addEventListener('change', () => {
+  rcFilterInput.placeholder = rcFilterPlaceholders[rcFilterField.value];
+  applyRcFilter();
 });
 document.querySelector('[data-activity-filter]')?.addEventListener('input', (event) => {
   const term = event.target.value.trim().toLocaleLowerCase('pt-BR');

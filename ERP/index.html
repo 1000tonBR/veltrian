@@ -10,7 +10,7 @@
 <body class="auth-pending">
   <section class="auth-gate" data-auth-gate aria-labelledby="login-title"><form class="login-card" data-login-form><a class="erp-brand login-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="kicker aqua">ERP · Compras</p><h1 id="login-title">Acesse sua conta</h1><p>Entre com seu e-mail corporativo para acessar o sistema de compras.</p><label>E-mail<input name="email" type="email" autocomplete="email" required></label><label>Senha<input name="password" type="password" autocomplete="current-password" required></label><p class="form-message" data-login-message role="alert"></p><button class="primary-button">Entrar no ERP</button><a class="back-link login-back" href="../">← Voltar ao site</a></form></section>
   <div class="app-shell">
-    <aside class="sidebar"><a class="erp-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="app-label">ERP · Compras</p><nav class="side-nav" aria-label="Navegação do ERP"><a class="active" href="#visao-geral">Visão geral</a><a href="rc.html">Requisições de compra</a><a href="quotes.html">Cotações</a><a href="orders.html">Pedidos</a><a href="reports.html">Relatórios</a><span class="nav-divider" role="separator"></span><a href="materials.html">Materiais</a><a href="suppliers.html">Fornecedor</a></nav><a class="back-link" href="../">← Voltar ao site</a></aside>
+    <aside class="sidebar"><a class="erp-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="app-label">ERP · Compras</p><nav class="side-nav" aria-label="Navegação do ERP"><a class="active" href="#visao-geral">Visão geral</a><a href="dashboard.html">Dashboard</a><a href="rc.html">Requisições de compra</a><a href="quotes.html">Cotações</a><a href="orders.html">Pedidos</a><a href="approvals.html">Aprovações</a><a href="reports.html">Relatórios</a><span class="nav-divider" role="separator"></span><a href="materials.html">Materiais</a><a href="suppliers.html">Fornecedor</a><a href="clients.html">Clientes</a></nav><a class="back-link" href="../">← Voltar ao site</a></aside>
     <main class="content" id="visao-geral">
       <header class="topbar"><div><p class="kicker">Central de compras</p><h1>Olá, <span data-user-name>usuário</span>.</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" data-sign-out>Sair</button></div></header>
       <div class="database-toast" data-dashboard-notice aria-live="polite" role="status"></div>
@@ -20,6 +20,7 @@
         <a href="rc.html"><article><p>RCs abertas</p><strong data-open-rcs>0</strong><span>Requisições ainda não concluídas</span></article></a>
         <a href="quotes.html"><article><p>Aguardando cotação</p><strong data-without-quotes>0</strong><span>RCs sem proposta registrada</span></article></a>
         <a href="orders.html"><article><p>Prontas para pedido</p><strong data-ready-orders>0</strong><span>Cotações aguardando decisão</span></article></a>
+        <a href="approvals.html"><article><p>Aguardando aprovação</p><strong data-waiting-approval>0</strong><span>Pedidos na fila gerencial</span></article></a>
         <a href="suppliers.html"><article><p>Fornecedores ativos</p><strong data-active-suppliers>0</strong><span>Cadastros disponíveis</span></article></a>
       </section>
 
@@ -31,7 +32,8 @@
       <section class="backlog-section" id="backlog"><div class="section-title"><div><p class="kicker">Fila de trabalho</p><h2>Zere o backlog de compras</h2></div></div><div class="backlog-grid">
         <a href="quotes.html"><span data-backlog-quotes>0</span><div><strong>Cotar requisições</strong><p>RCs que ainda não receberam propostas.</p></div><b>Ir para cotações →</b></a>
         <a href="orders.html"><span data-backlog-orders>0</span><div><strong>Escolher fornecedor</strong><p>RCs cotadas que aguardam pedido.</p></div><b>Ir para pedidos →</b></a>
-        <a href="orders.html"><span data-backlog-send>0</span><div><strong>Enviar pedidos</strong><p>Pedidos criados que ainda não tiveram o PDF emitido.</p></div><b>Finalizar pedidos →</b></a>
+        <a href="approvals.html"><span data-backlog-approval>0</span><div><strong>Aprovar pedidos</strong><p>Pedidos submetidos que aguardam decisão.</p></div><b>Ir para aprovações →</b></a>
+        <a href="orders.html"><span data-backlog-send>0</span><div><strong>Emitir pedidos</strong><p>Pedidos aprovados com o PDF liberado.</p></div><b>Gerar pedidos →</b></a>
       </div></section>
     </main>
   </div>

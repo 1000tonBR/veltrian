@@ -36,14 +36,18 @@ async function loadDashboard() {
   const requests = requestsResult.data || [];
   const open = requests.filter((request) => request.status !== 'concluida');
   const withoutQuotes = open.filter((request) => !request.quotes?.length);
-  const readyForOrder = open.filter((request) => request.quotes?.length && !request.orders?.length);
-  const waitingToSend = requests.filter((request) => request.orders?.some((order) => !order.sent_at && order.status !== 'cancelado'));
+  const latestOrder = (request) => [...(request.orders || [])].sort((a,b) => Number(b.order_number) - Number(a.order_number))[0];
+  const readyForOrder = open.filter((request) => request.quotes?.length && (!request.orders?.length || latestOrder(request)?.status === 'reprovado'));
+  const waitingApproval = requests.filter((request) => latestOrder(request)?.status === 'em_aprovacao');
+  const waitingToSend = requests.filter((request) => latestOrder(request)?.status === 'aprovado' && !latestOrder(request)?.sent_at);
   document.querySelector('[data-open-rcs]').textContent = open.length;
   document.querySelector('[data-without-quotes]').textContent = withoutQuotes.length;
   document.querySelector('[data-ready-orders]').textContent = readyForOrder.length;
+  document.querySelector('[data-waiting-approval]').textContent = waitingApproval.length;
   document.querySelector('[data-active-suppliers]').textContent = suppliersResult.count || 0;
   document.querySelector('[data-backlog-quotes]').textContent = withoutQuotes.length;
   document.querySelector('[data-backlog-orders]').textContent = readyForOrder.length;
+  document.querySelector('[data-backlog-approval]').textContent = waitingApproval.length;
   document.querySelector('[data-backlog-send]').textContent = waitingToSend.length;
 
   const rows = document.querySelector('[data-overview-rows]');
@@ -52,7 +56,11 @@ async function loadDashboard() {
     const lowest = quotes.length ? Math.min(...quotes.map((quote) => Number(quote.net_value))) : null;
     let stage = 'Aguardando cotação'; let statusClass = 'pending'; let target = 'quotes.html'; let action = 'Registrar cotação';
     if (quotes.length && !orders.length) { stage = 'Cotação pronta'; statusClass = 'approval'; target = 'orders.html'; action = 'Escolher fornecedor'; }
-    if (orders.length) { stage = orders.some((order) => order.sent_at) ? 'Pedido enviado' : 'Pedido a enviar'; statusClass = orders.some((order) => order.sent_at) ? 'approved' : 'approval'; target = 'orders.html'; action = orders.some((order) => order.sent_at) ? 'Ver pedido' : 'Gerar PDF'; }
+    const order = latestOrder(request);
+    if (order?.status === 'em_aprovacao') { stage = 'Aguardando aprovação'; statusClass = 'approval'; target = 'approvals.html'; action = 'Analisar pedido'; }
+    if (order?.status === 'aprovado') { stage = 'Pedido aprovado'; statusClass = 'approved'; target = 'orders.html'; action = 'Gerar PDF'; }
+    if (['enviado','recebido'].includes(order?.status)) { stage = order.status === 'recebido' ? 'Pedido recebido' : 'Pedido emitido'; statusClass = 'approved'; target = 'orders.html'; action = 'Ver pedido'; }
+    if (order?.status === 'reprovado') { stage = 'Pedido rejeitado'; statusClass = 'cancelled'; target = 'orders.html'; action = 'Revisar pedido'; }
     return `<tr><td><strong>${dashboardRcCode(request.request_number)}</strong></td><td>${dashboardEscape(dashboardMaterial(request))}</td><td>${quotes.length}</td><td>${lowest === null ? '—' : dashboardMoney(lowest)}</td><td><span class="status ${statusClass}">${stage}</span></td><td>${dashboardDate(request.created_at)}</td><td><a class="row-link" href="${target}">${action} →</a></td></tr>`;
   }).join('') : '<tr><td colspan="7" class="empty-cell">Nenhuma requisição cadastrada.</td></tr>';
 }
