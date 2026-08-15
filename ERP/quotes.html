@@ -8,7 +8,24 @@
       <div class="database-toast" data-notice aria-live="assertive" role="status"></div>
       <div class="module-grid quote-layout">
         <form class="form-card" data-quote-form><p class="kicker aqua" data-quote-kicker>Nova cotação</p><h2>Registrar propostas de fornecedores</h2>
-          <div class="form-grid"><label class="full">Requisição de compra<select name="purchase_request_id" data-quote-request required><option value="">Carregando requisições…</option></select></label></div>
+          <div class="form-grid">
+            <div class="full quote-request-field">
+              <span>Requisição de compra</span>
+              <div class="request-filter-controls">
+                <select data-request-filter-field aria-label="Escolher campo para filtrar requisições">
+                  <option value="all">Todos os campos</option>
+                  <option value="rc">Número da RC</option>
+                  <option value="material">Material</option>
+                  <option value="requester">Solicitante</option>
+                  <option value="date">Data do cadastro</option>
+                </select>
+                <input type="search" data-request-filter placeholder="Digite RC, material ou solicitante" autocomplete="off" aria-label="Termo para filtrar requisições">
+                <input type="date" data-request-date-filter aria-label="Data para filtrar requisições" hidden>
+              </div>
+              <select name="purchase_request_id" data-quote-request required aria-label="Requisição de compra"><option value="">Carregando requisições…</option></select>
+              <small class="request-result-count" data-request-result-count aria-live="polite"></small>
+            </div>
+          </div>
           <div class="request-summary" data-request-summary>Selecione uma requisição para ver o material e a atividade.</div>
           <div class="quote-options" data-quote-options></div>
           <button class="add-quote-button" type="button" data-add-quote><span aria-hidden="true">+</span> Adicionar cotação</button>

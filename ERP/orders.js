@@ -5,6 +5,10 @@ const orderRequestSelect = document.querySelector('[data-order-request]');
 const orderQuoteSelect = document.querySelector('[data-order-quote]');
 const orderCancel = document.querySelector('[data-cancel-order]');
 const reasonField = document.querySelector('[data-selection-reason]');
+const orderRequestFilterField = document.querySelector('[data-order-request-filter-field]');
+const orderRequestFilterInput = document.querySelector('[data-order-request-filter]');
+const orderRequestDateFilter = document.querySelector('[data-order-request-date-filter]');
+const orderRequestResultCount = document.querySelector('[data-order-request-result-count]');
 let allQuotes = [];
 let orders = [];
 let editingOrderId = null;
@@ -17,6 +21,19 @@ const orderCode = (number) => `PC-${String(number).padStart(4, '0')}`;
 const orderRcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
 const orderMaterial = (request) => request?.lines?.map((line) => `${line.item?.material_number ? `MAT-${String(line.item.material_number).padStart(4, '0')} · ` : ''}${line.item?.description || ''}`).filter(Boolean).join(', ') || '—';
 const orderQuantity = (request) => request?.lines?.map((line) => line.quantity).filter(Boolean).join(', ') || '—';
+const orderRequester = (request) => request?.requester?.full_name || request?.requester?.email || 'Solicitante não identificado';
+const normalizeOrderSearch = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+const orderDateKey = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+const orderRequestFilterPlaceholders = {
+  all: 'Digite RC, material ou solicitante',
+  rc: 'Digite o número da RC',
+  material: 'Digite o código ou a descrição do material',
+  requester: 'Digite o nome ou e-mail do solicitante'
+};
 
 function orderStatusBadge(status) {
   const labels = { rascunho: 'Rascunho', em_aprovacao: 'Aguardando aprovação', aprovado: 'Aprovado', reprovado: 'Rejeitado', enviado: 'PDF emitido', recebido: 'Recebido', cancelado: 'Cancelado' };
@@ -32,11 +49,55 @@ function showOrderNotice(text, type = 'success') {
 function refreshOrders(text) { showOrderNotice(text); setTimeout(() => window.location.reload(), 1500); }
 function quotesForRequest(requestId) { return allQuotes.filter((quote) => quote.purchase_request_id === requestId).sort((a, b) => Number(a.net_value) - Number(b.net_value)); }
 
-function renderRequestOptions(includeAll = false) {
+function availableOrderRequests(includeAll = false) {
   const existingRequestIds = new Set(orders.map((order) => order.purchase_request_id));
   const requestMap = new Map(); allQuotes.forEach((quote) => requestMap.set(quote.purchase_request_id, quote.request));
-  const available = [...requestMap.entries()].filter(([id]) => includeAll || !existingRequestIds.has(id));
-  orderRequestSelect.innerHTML = `<option value="">Selecione uma requisição</option>${available.map(([id, request]) => `<option value="${id}">${orderRcCode(request?.request_number || '')} · ${escapeOrder(orderMaterial(request))}</option>`).join('')}`;
+  return [...requestMap.entries()].filter(([id]) => includeAll || !existingRequestIds.has(id));
+}
+
+function orderRequestFields(request) {
+  return {
+    rc: [orderRcCode(request?.request_number || ''), request?.request_number],
+    material: [orderMaterial(request)],
+    requester: [request?.requester?.full_name, request?.requester?.email],
+    date: [orderDateKey(request?.created_at)],
+    all: [orderRcCode(request?.request_number || ''), request?.request_number, orderMaterial(request), request?.requester?.full_name, request?.requester?.email, orderDate(request?.created_at, false), orderDateKey(request?.created_at)]
+  };
+}
+
+function renderRequestOptions(includeAll = false, entries = null, selectedRequestId = orderRequestSelect.value) {
+  const available = availableOrderRequests(includeAll);
+  const displayed = entries || available;
+  const selectedEntry = selectedRequestId && available.find(([id]) => id === selectedRequestId);
+  const visible = selectedEntry && !displayed.some(([id]) => id === selectedRequestId) ? [selectedEntry, ...displayed] : displayed;
+  const emptyLabel = displayed.length ? 'Selecione uma requisição' : 'Nenhuma requisição encontrada';
+  orderRequestSelect.innerHTML = `<option value="">${emptyLabel}</option>${visible.map(([id, request]) => `<option value="${id}">${orderRcCode(request?.request_number || '')} · ${escapeOrder(orderMaterial(request))} — ${escapeOrder(orderRequester(request))} · ${orderDate(request?.created_at, false)}</option>`).join('')}`;
+  if (selectedEntry) orderRequestSelect.value = selectedRequestId;
+  if (orderRequestResultCount) {
+    orderRequestResultCount.textContent = displayed.length === 1 ? '1 requisição encontrada' : `${displayed.length} requisições encontradas`;
+    orderRequestResultCount.dataset.empty = String(displayed.length === 0);
+  }
+}
+
+function applyOrderRequestFilter() {
+  const field = orderRequestFilterField?.value || 'all';
+  const term = field === 'date' ? orderRequestDateFilter?.value || '' : normalizeOrderSearch(orderRequestFilterInput?.value);
+  const includeAll = Boolean(editingOrderId);
+  const available = availableOrderRequests(includeAll);
+  const filtered = term ? available.filter(([, request]) => orderRequestFields(request)[field].some((value) => normalizeOrderSearch(value).includes(normalizeOrderSearch(term)))) : available;
+  renderRequestOptions(includeAll, filtered, orderRequestSelect.value);
+}
+
+function resetOrderRequestFilter() {
+  if (orderRequestFilterField) { orderRequestFilterField.value = 'all'; orderRequestFilterField.disabled = false; }
+  if (orderRequestFilterInput) { orderRequestFilterInput.value = ''; orderRequestFilterInput.placeholder = orderRequestFilterPlaceholders.all; orderRequestFilterInput.hidden = false; orderRequestFilterInput.disabled = false; }
+  if (orderRequestDateFilter) { orderRequestDateFilter.value = ''; orderRequestDateFilter.hidden = true; orderRequestDateFilter.disabled = false; }
+}
+
+function lockOrderRequestFilter() {
+  if (orderRequestFilterField) orderRequestFilterField.disabled = true;
+  if (orderRequestFilterInput) orderRequestFilterInput.disabled = true;
+  if (orderRequestDateFilter) orderRequestDateFilter.disabled = true;
 }
 
 function renderQuoteChoices(selectedQuoteId = '') {
@@ -50,7 +111,7 @@ function updateOrderSummary() {
   const requestQuotes = quotesForRequest(orderRequestSelect.value); const quote = requestQuotes.find((entry) => entry.id === orderQuoteSelect.value); const lowest = requestQuotes[0];
   if (!quote) { document.querySelector('[data-order-summary]').textContent = 'Selecione uma requisição cotada.'; reasonField.hidden = true; return; }
   const isHigher = lowest && Number(quote.net_value) > Number(lowest.net_value); reasonField.hidden = !isHigher; reasonField.querySelector('textarea').required = isHigher;
-  document.querySelector('[data-order-summary]').innerHTML = `<strong>${escapeOrder(quote.supplier?.legal_name)}</strong><span>${orderRcCode(quote.request?.request_number || '')} · ${escapeOrder(orderMaterial(quote.request))} · Qtd. ${escapeOrder(orderQuantity(quote.request))}</span><span>Líquido: <b>${orderMoney(quote.net_value)}</b> · Entrega: ${orderDate(quote.delivery_date, false)} · Frete: ${escapeOrder(quote.freight_type)} · Pagamento: ${escapeOrder(quote.payment_terms)}</span>${isHigher ? `<em>Esta proposta está ${orderMoney(Number(quote.net_value) - Number(lowest.net_value))} acima do menor preço.</em>` : '<em class="best-choice">Menor preço sugerido automaticamente.</em>'}`;
+  document.querySelector('[data-order-summary]').innerHTML = `<strong>${escapeOrder(quote.supplier?.legal_name)}</strong><span>${orderRcCode(quote.request?.request_number || '')} · ${escapeOrder(orderMaterial(quote.request))} · Qtd. ${escapeOrder(orderQuantity(quote.request))}</span><span>Solicitante: ${escapeOrder(orderRequester(quote.request))} · Cadastro: ${orderDate(quote.request?.created_at, false)}</span><span>Líquido: <b>${orderMoney(quote.net_value)}</b> · Entrega: ${orderDate(quote.delivery_date, false)} · Frete: ${escapeOrder(quote.freight_type)} · Pagamento: ${escapeOrder(quote.payment_terms)}</span>${isHigher ? `<em>Esta proposta está ${orderMoney(Number(quote.net_value) - Number(lowest.net_value))} acima do menor preço.</em>` : '<em class="best-choice">Menor preço sugerido automaticamente.</em>'}`;
 }
 
 function renderOrders(entries = orders) {
@@ -63,7 +124,7 @@ function renderOrders(entries = orders) {
 }
 
 async function loadAllQuotes() {
-  const { data, error } = await orderClient.from('quotes').select('*,supplier:suppliers(id,legal_name,trade_name,tax_id,contact_email,contact_phone,street,address_number,city,state),request:purchase_requests(id,request_number,description,activity:activities(code,description),lines:purchase_request_items(quantity,notes,item:items(description,manufacturer,serial_number,material_number)))').order('created_at', { ascending: false });
+  const { data, error } = await orderClient.from('quotes').select('*,supplier:suppliers(id,legal_name,trade_name,tax_id,contact_email,contact_phone,street,address_number,city,state),request:purchase_requests(id,request_number,description,created_at,requester:profiles!purchase_requests_requested_by_fkey(full_name,email),activity:activities(code,description),lines:purchase_request_items(quantity,notes,item:items(description,manufacturer,serial_number,material_number)))').order('created_at', { ascending: false });
   if (error) return showOrderNotice(`Não foi possível carregar as cotações: ${error.message}`, 'error'); allQuotes = data || [];
 }
 
@@ -73,14 +134,14 @@ async function loadOrders() {
 }
 
 function resetOrderForm() {
-  editingOrderId = null; orderForm.reset(); orderForm.elements.record_id.value = ''; orderRequestSelect.disabled = false; renderRequestOptions(); orderQuoteSelect.innerHTML = '<option value="">Selecione primeiro a requisição</option>'; document.querySelector('[data-order-comparison]').innerHTML = ''; updateOrderSummary();
+  editingOrderId = null; orderForm.reset(); orderForm.elements.record_id.value = ''; orderRequestSelect.disabled = false; resetOrderRequestFilter(); renderRequestOptions(false, null, ''); orderQuoteSelect.innerHTML = '<option value="">Selecione primeiro a requisição</option>'; document.querySelector('[data-order-comparison]').innerHTML = ''; updateOrderSummary();
   document.querySelector('[data-order-kicker]').textContent = 'Novo pedido'; document.querySelector('[data-save-order]').textContent = 'Enviar para aprovação'; orderCancel.hidden = true;
 }
 
 function editOrder(id) {
   const order = orders.find((entry) => entry.id === id); if (!order) return;
   if (!['rascunho', 'reprovado'].includes(order.status)) return showOrderNotice('Este pedido não pode ser alterado enquanto está em aprovação ou depois de aprovado.', 'error');
-  editingOrderId = id; renderRequestOptions(true); orderForm.elements.record_id.value = id; orderRequestSelect.value = order.purchase_request_id; orderRequestSelect.disabled = true; renderQuoteChoices(order.quote_id || ''); orderForm.elements.selection_reason.value = order.selection_reason || '';
+  editingOrderId = id; resetOrderRequestFilter(); renderRequestOptions(true, null, order.purchase_request_id); orderForm.elements.record_id.value = id; orderRequestSelect.value = order.purchase_request_id; orderRequestSelect.disabled = true; lockOrderRequestFilter(); renderQuoteChoices(order.quote_id || ''); orderForm.elements.selection_reason.value = order.selection_reason || '';
   document.querySelector('[data-order-kicker]').textContent = `Revisão do ${orderCode(order.order_number)}`; document.querySelector('[data-save-order]').textContent = 'Reenviar para aprovação'; orderCancel.hidden = false; updateOrderSummary(); orderForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -112,6 +173,16 @@ async function generateOrderPdf(id) {
 }
 
 orderRequestSelect.addEventListener('change', () => renderQuoteChoices()); orderQuoteSelect.addEventListener('change', updateOrderSummary); orderCancel.addEventListener('click', resetOrderForm);
+orderRequestFilterInput?.addEventListener('input', applyOrderRequestFilter);
+orderRequestDateFilter?.addEventListener('change', applyOrderRequestFilter);
+orderRequestFilterField?.addEventListener('change', () => {
+  const useDate = orderRequestFilterField.value === 'date';
+  orderRequestFilterInput.hidden = useDate;
+  orderRequestDateFilter.hidden = !useDate;
+  if (useDate) orderRequestFilterInput.value = '';
+  else { orderRequestDateFilter.value = ''; orderRequestFilterInput.placeholder = orderRequestFilterPlaceholders[orderRequestFilterField.value] || orderRequestFilterPlaceholders.all; }
+  applyOrderRequestFilter();
+});
 
 orderForm.addEventListener('submit', async (event) => {
   event.preventDefault(); const values = new FormData(orderForm); const id = values.get('record_id'); const requestId = editingOrderId ? orders.find((order) => order.id === editingOrderId)?.purchase_request_id : values.get('purchase_request_id'); const quote = allQuotes.find((entry) => entry.id === values.get('quote_id'));

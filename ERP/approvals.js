@@ -66,7 +66,7 @@ async function decideOrder(decision) {
   if (decision === 'reprovado' && !comments) return showApprovalNotice('Informe o motivo da rejeição para devolver o pedido.', 'error');
   const { error } = await approvalClient.rpc('decide_purchase_order', { p_order_id: activeApprovalOrder.id, p_decision: decision, p_comments: comments || null });
   if (error) return showApprovalNotice(`Decisão não registrada: ${error.message}`, 'error');
-  approvalDialog.close(); showApprovalNotice(decision === 'aprovado' ? 'Pedido aprovado com sucesso. O PDF foi liberado.' : 'Pedido rejeitado. Ele voltou para a etapa de pedidos.'); setTimeout(() => window.location.reload(), 1600);
+  approvalDialog.close(); showApprovalNotice(decision === 'aprovado' ? 'Pedido aprovado com sucesso.' : 'Pedido rejeitado. Ele voltou para a etapa de pedidos.'); setTimeout(() => window.location.reload(), 1600);
 }
 
 async function loadApprovalProfile() {

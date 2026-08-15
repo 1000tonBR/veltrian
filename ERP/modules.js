@@ -4,6 +4,10 @@ const rcForm = document.querySelector('[data-rc-form]');
 const activityForm = document.querySelector('[data-activity-form]');
 const rcCancel = document.querySelector('[data-cancel-rc]');
 const activityCancel = document.querySelector('[data-cancel-activity]');
+const materialSelect = document.querySelector('[data-rc-item]');
+const materialFilterInput = document.querySelector('[data-material-filter]');
+const materialFilterField = document.querySelector('[data-material-filter-field]');
+const materialResultCount = document.querySelector('[data-material-result-count]');
 let materials = [];
 let activities = [];
 let requests = [];
@@ -14,6 +18,54 @@ const formatDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', { dateSty
 const rcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
 const materialCode = (number) => number ? `MAT-${String(number).padStart(4, '0')}` : '—';
 const orderCode = (number) => number ? `PC-${String(number).padStart(4, '0')}` : '—';
+const normalizeSearch = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+
+const materialFilterPlaceholders = {
+  all: 'Digite código, descrição, fabricante ou nº de série',
+  code: 'Digite o código do material',
+  description: 'Digite parte da descrição',
+  manufacturer: 'Digite o fabricante',
+  serial: 'Digite o número de série'
+};
+
+function materialFields(material) {
+  const code = materialCode(material.material_number);
+  return {
+    code: [code, code.replace(/-/g, ''), material.material_number],
+    description: [material.description],
+    manufacturer: [material.manufacturer],
+    serial: [material.serial_number],
+    all: [code, code.replace(/-/g, ''), material.material_number, material.description, material.manufacturer, material.serial_number]
+  };
+}
+
+function materialOptionLabel(material) {
+  const details = [material.manufacturer, material.serial_number].filter(Boolean).map(escapeHtml).join(' · ');
+  return `${escapeHtml(materialCode(material.material_number))} · ${escapeHtml(material.description)}${details ? ` — ${details}` : ''}`;
+}
+
+function renderMaterialOptions(entries = materials, selectedId = materialSelect?.value || '') {
+  if (!materialSelect) return;
+  const selectedMaterial = selectedId && materials.find((material) => String(material.id) === String(selectedId));
+  const visibleEntries = selectedMaterial && !entries.some((material) => String(material.id) === String(selectedId))
+    ? [selectedMaterial, ...entries]
+    : entries;
+  materialSelect.innerHTML = `<option value="">${entries.length ? 'Selecione um material' : 'Nenhum material encontrado'}</option>${visibleEntries.map((material) => `<option value="${escapeHtml(material.id)}">${materialOptionLabel(material)}</option>`).join('')}`;
+  if (selectedMaterial) materialSelect.value = selectedMaterial.id;
+  if (materialResultCount) {
+    materialResultCount.textContent = entries.length === 1 ? '1 material encontrado' : `${entries.length} materiais encontrados`;
+    materialResultCount.dataset.empty = String(entries.length === 0);
+  }
+}
+
+function applyMaterialFilter() {
+  const term = normalizeSearch(materialFilterInput?.value);
+  const field = materialFilterField?.value || 'all';
+  const filtered = term
+    ? materials.filter((material) => materialFields(material)[field].some((value) => normalizeSearch(value).includes(term)))
+    : materials;
+  renderMaterialOptions(filtered);
+}
 
 function showNotice(text, type = 'success') {
   if (!moduleNotice) return;
@@ -67,8 +119,7 @@ async function loadMaterials() {
   const { data, error } = await moduleClient.from('items').select('*').eq('active', true).order('description');
   if (error) return showNotice(`Não foi possível carregar os materiais: ${error.message}`, 'error');
   materials = data || [];
-  const select = document.querySelector('[data-rc-item]');
-  if (select) select.innerHTML = `<option value="">Selecione um material</option>${materials.map((material) => `<option value="${material.id}">${material.material_number ? `MAT-${String(material.material_number).padStart(4, '0')} · ` : ''}${escapeHtml(material.description)}</option>`).join('')}`;
+  renderMaterialOptions();
 }
 
 async function loadActivities() {
@@ -112,6 +163,10 @@ async function deleteActivity(id) {
 
 function resetRcForm() {
   rcForm.reset(); rcForm.elements.record_id.value = ''; rcForm.elements.line_id.value = '';
+  if (materialFilterInput) materialFilterInput.value = '';
+  if (materialFilterField) materialFilterField.value = 'all';
+  if (materialFilterInput) materialFilterInput.placeholder = materialFilterPlaceholders.all;
+  renderMaterialOptions(materials, '');
   document.querySelector('[data-rc-kicker]').textContent = 'Nova requisição'; document.querySelector('[data-rc-title]').textContent = 'Criar requisição';
   document.querySelector('[data-save-rc]').textContent = 'Salvar requisição'; rcCancel.hidden = true;
 }
@@ -119,6 +174,10 @@ function resetRcForm() {
 function editRequest(id) {
   const rc = requests.find((entry) => entry.id === id); if (!rc) return;
   const line = rc.lines?.[0];
+  if (materialFilterInput) materialFilterInput.value = '';
+  if (materialFilterField) materialFilterField.value = 'all';
+  if (materialFilterInput) materialFilterInput.placeholder = materialFilterPlaceholders.all;
+  renderMaterialOptions(materials, line?.item_id || '');
   rcForm.elements.record_id.value = rc.id; rcForm.elements.line_id.value = line?.id || ''; rcForm.elements.item_id.value = line?.item_id || '';
   rcForm.elements.quantity.value = line?.quantity || ''; rcForm.elements.priority.value = rc.priority || 'normal'; rcForm.elements.activity_id.value = rc.activity_id || ''; rcForm.elements.notes.value = line?.notes || rc.description || '';
   document.querySelector('[data-rc-kicker]').textContent = `Edição da ${rcCode(rc.request_number)}`; document.querySelector('[data-rc-title]').textContent = 'Editar requisição';
@@ -176,6 +235,12 @@ document.querySelector('[data-requests-rows]')?.addEventListener('click', (event
   if (edit) editRequest(edit.dataset.editRc); if (remove) deleteRequest(remove.dataset.deleteRc);
 });
 rcCancel?.addEventListener('click', resetRcForm); activityCancel?.addEventListener('click', resetActivityForm);
+
+materialFilterInput?.addEventListener('input', applyMaterialFilter);
+materialFilterField?.addEventListener('change', () => {
+  materialFilterInput.placeholder = materialFilterPlaceholders[materialFilterField.value];
+  applyMaterialFilter();
+});
 
 const rcFilterInput = document.querySelector('[data-rc-filter]');
 const rcFilterField = document.querySelector('[data-rc-filter-field]');

@@ -131,15 +131,15 @@ security invoker
 set search_path = ''
 as $$
 declare
-  current_role text;
+  actor_role text;
 begin
   if new.status in ('aprovado', 'reprovado')
      and new.status is distinct from old.status then
-    select p.role::text into current_role
+    select p.role::text into actor_role
     from public.profiles p
     where p.id = (select auth.uid());
 
-    if coalesce(current_role, '') not in ('administrador', 'aprovador') then
+    if coalesce(actor_role, '') not in ('administrador', 'aprovador') then
       raise exception 'Somente administradores ou aprovadores podem decidir pedidos.';
     end if;
   end if;
@@ -174,7 +174,7 @@ set search_path = ''
 as $$
 declare
   current_user_id uuid := (select auth.uid());
-  current_role text;
+  actor_role text;
   request_id uuid;
   current_status text;
 begin
@@ -182,11 +182,11 @@ begin
     raise exception 'Sessao expirada.';
   end if;
 
-  select p.role::text into current_role
+  select p.role::text into actor_role
   from public.profiles p
   where p.id = current_user_id;
 
-  if coalesce(current_role, '') not in ('administrador', 'aprovador') then
+  if coalesce(actor_role, '') not in ('administrador', 'aprovador') then
     raise exception 'Usuario sem permissao para aprovar pedidos.';
   end if;
 

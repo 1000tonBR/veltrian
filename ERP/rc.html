@@ -24,7 +24,21 @@
             <input type="hidden" name="record_id"><input type="hidden" name="line_id">
             <p class="kicker aqua" data-rc-kicker>Nova requisição</p><h2 data-rc-title>Criar requisição</h2>
             <div class="form-grid">
-              <label class="full">Material<select name="item_id" data-rc-item required><option value="">Carregando materiais…</option></select></label>
+              <div class="full material-field">
+                <span>Material</span>
+                <div class="material-filter-controls">
+                  <select data-material-filter-field aria-label="Escolher campo para filtrar materiais">
+                    <option value="all">Todos os campos</option>
+                    <option value="code">Código</option>
+                    <option value="description">Descrição</option>
+                    <option value="manufacturer">Fabricante</option>
+                    <option value="serial">Número de série</option>
+                  </select>
+                  <input type="search" data-material-filter placeholder="Digite para localizar um material" autocomplete="off" aria-label="Termo para filtrar materiais">
+                </div>
+                <select name="item_id" data-rc-item required aria-label="Material"><option value="">Carregando materiais…</option></select>
+                <small class="material-result-count" data-material-result-count aria-live="polite"></small>
+              </div>
               <label>Quantidade<input name="quantity" type="number" min="0.001" step="0.001" required></label>
               <label>Prioridade<select name="priority" required><option value="normal">Normal</option><option value="baixa">Baixa</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
               <label class="full">Atividade<select name="activity_id" data-rc-activity><option value="">Sem atividade vinculada</option></select></label>

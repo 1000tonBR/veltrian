@@ -8,7 +8,22 @@
       <div class="database-toast" data-notice aria-live="assertive" role="status"></div>
       <div class="module-grid supplier-grid">
         <form class="form-card" data-order-form><input type="hidden" name="record_id"><p class="kicker aqua" data-order-kicker>Novo pedido</p><h2>Escolher a cotação</h2><p class="form-helper">O menor preço já vem sugerido. Ao confirmar, o pedido seguirá para o módulo Aprovações. Você pode escolher outra proposta, desde que informe o motivo.</p><div class="form-grid">
-          <label class="full">Requisição cotada<select name="purchase_request_id" data-order-request required><option value="">Carregando requisições…</option></select></label>
+          <div class="full order-request-field">
+            <span>Requisição cotada</span>
+            <div class="request-filter-controls">
+              <select data-order-request-filter-field aria-label="Escolher campo para filtrar requisições cotadas">
+                <option value="all">Todos os campos</option>
+                <option value="rc">Número da RC</option>
+                <option value="material">Material</option>
+                <option value="requester">Solicitante</option>
+                <option value="date">Data do cadastro</option>
+              </select>
+              <input type="search" data-order-request-filter placeholder="Digite RC, material ou solicitante" autocomplete="off" aria-label="Termo para filtrar requisições cotadas">
+              <input type="date" data-order-request-date-filter aria-label="Data para filtrar requisições cotadas" hidden>
+            </div>
+            <select name="purchase_request_id" data-order-request required aria-label="Requisição cotada"><option value="">Carregando requisições…</option></select>
+            <small class="request-result-count" data-order-request-result-count aria-live="polite"></small>
+          </div>
           <label class="full">Cotação escolhida<select name="quote_id" data-order-quote required><option value="">Selecione primeiro a requisição</option></select></label>
           <label class="full" data-selection-reason hidden>Motivo para não escolher o menor preço<textarea name="selection_reason" placeholder="Explique prazo, qualidade, condição comercial ou outro critério"></textarea></label>
         </div><div class="order-summary" data-order-summary>Selecione uma requisição cotada.</div><div class="quote-comparison" data-order-comparison></div><div class="form-actions"><button class="primary-button" data-save-order>Enviar para aprovação</button><button class="secondary-button" type="button" data-cancel-order hidden>Cancelar edição</button></div></form>

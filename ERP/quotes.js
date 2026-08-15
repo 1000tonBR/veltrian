@@ -5,6 +5,10 @@ const requestSelect = document.querySelector('[data-quote-request]');
 const quoteOptions = document.querySelector('[data-quote-options]');
 const addQuoteButton = document.querySelector('[data-add-quote]');
 const quoteCancel = document.querySelector('[data-cancel-quote]');
+const requestFilterField = document.querySelector('[data-request-filter-field]');
+const requestFilterInput = document.querySelector('[data-request-filter]');
+const requestDateFilter = document.querySelector('[data-request-date-filter]');
+const requestResultCount = document.querySelector('[data-request-result-count]');
 let quoteRequests = [];
 let quoteSuppliers = [];
 let quotes = [];
@@ -18,6 +22,22 @@ const quoteRcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
 const quoteMaterial = (request) => request?.lines?.map((line) => line.item?.description).filter(Boolean).join(', ') || '—';
 const quoteMaterialCode = (request) => request?.lines?.map((line) => line.item?.material_number ? `MAT-${String(line.item.material_number).padStart(4, '0')}` : '—').join(', ') || '—';
 const quoteActivity = (request) => request?.activity ? `${request.activity.code} · ${request.activity.description}` : '—';
+const quoteRequester = (request) => request?.requester?.full_name || request?.requester?.email || 'Solicitante não identificado';
+const normalizeQuoteSearch = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+const quoteDateKey = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const requestFilterPlaceholders = {
+  all: 'Digite RC, material ou solicitante',
+  rc: 'Digite o número da RC',
+  material: 'Digite o código ou a descrição do material',
+  requester: 'Digite o nome ou e-mail do solicitante'
+};
 
 function showQuoteNotice(text, type = 'success') {
   if (!quoteNotice) return;
@@ -36,7 +56,7 @@ function quoteOptionMarkup(index, value = {}) {
 }
 
 function renderQuoteOptions(values = []) {
-  const optionCount = Math.max(3, values.length);
+  const optionCount = Math.max(1, values.length);
   quoteOptions.innerHTML = Array.from({ length: optionCount }, (_, index) => quoteOptionMarkup(index, values[index])).join('');
   updateNetValues();
 }
@@ -57,15 +77,50 @@ function updateNetValues() {
 
 function updateRequestSummary() {
   const request = quoteRequests.find((entry) => entry.id === requestSelect.value);
-  document.querySelector('[data-request-summary]').innerHTML = request ? `<strong>${quoteRcCode(request.request_number)}</strong><span>${quoteMaterialCode(request)} · ${escapeQuote(quoteMaterial(request))}</span><span>Atividade: ${escapeQuote(quoteActivity(request))}</span>` : 'Selecione uma requisição para ver o material e a atividade.';
+  document.querySelector('[data-request-summary]').innerHTML = request ? `<strong>${quoteRcCode(request.request_number)}</strong><span>${quoteMaterialCode(request)} · ${escapeQuote(quoteMaterial(request))}</span><span>Solicitante: ${escapeQuote(quoteRequester(request))} · Cadastro: ${quoteDate(request.created_at, false)}</span><span>Atividade: ${escapeQuote(quoteActivity(request))}</span>` : 'Selecione uma requisição para ver o material e a atividade.';
 }
 
-function renderRequestOptions(selectedRequestId = '') {
+function availableQuoteRequests(selectedRequestId = '') {
   const quotedRequestIds = new Set(quotes.map((quote) => quote.purchase_request_id));
-  const availableRequests = quoteRequests.filter((request) => !quotedRequestIds.has(request.id) || request.id === selectedRequestId);
-  const emptyLabel = availableRequests.length ? 'Selecione uma requisição' : 'Nenhuma requisição pendente de cotação';
-  requestSelect.innerHTML = `<option value="">${emptyLabel}</option>${availableRequests.map((request) => `<option value="${request.id}">${quoteRcCode(request.request_number)} · ${escapeQuote(quoteMaterial(request))}</option>`).join('')}`;
-  requestSelect.value = selectedRequestId;
+  return quoteRequests.filter((request) => !quotedRequestIds.has(request.id) || request.id === selectedRequestId);
+}
+
+function requestFields(request) {
+  return {
+    rc: [quoteRcCode(request.request_number), request.request_number],
+    material: [quoteMaterialCode(request), quoteMaterial(request)],
+    requester: [request.requester?.full_name, request.requester?.email],
+    date: [quoteDateKey(request.created_at)],
+    all: [quoteRcCode(request.request_number), request.request_number, quoteMaterialCode(request), quoteMaterial(request), request.requester?.full_name, request.requester?.email, quoteDate(request.created_at, false), quoteDateKey(request.created_at)]
+  };
+}
+
+function renderRequestOptions(selectedRequestId = requestSelect.value, entries = null) {
+  const availableRequests = availableQuoteRequests(selectedRequestId);
+  const displayedRequests = entries || availableRequests;
+  const selectedRequest = selectedRequestId && availableRequests.find((request) => request.id === selectedRequestId);
+  const visibleRequests = selectedRequest && !displayedRequests.some((request) => request.id === selectedRequestId) ? [selectedRequest, ...displayedRequests] : displayedRequests;
+  const emptyLabel = displayedRequests.length ? 'Selecione uma requisição' : 'Nenhuma requisição encontrada';
+  requestSelect.innerHTML = `<option value="">${emptyLabel}</option>${visibleRequests.map((request) => `<option value="${request.id}">${quoteRcCode(request.request_number)} · ${escapeQuote(quoteMaterial(request))} — ${escapeQuote(quoteRequester(request))} · ${quoteDate(request.created_at, false)}</option>`).join('')}`;
+  if (selectedRequest) requestSelect.value = selectedRequestId;
+  if (requestResultCount) {
+    requestResultCount.textContent = displayedRequests.length === 1 ? '1 requisição encontrada' : `${displayedRequests.length} requisições encontradas`;
+    requestResultCount.dataset.empty = String(displayedRequests.length === 0);
+  }
+}
+
+function applyRequestFilter() {
+  const field = requestFilterField?.value || 'all';
+  const term = field === 'date' ? requestDateFilter?.value || '' : normalizeQuoteSearch(requestFilterInput?.value);
+  const availableRequests = availableQuoteRequests(requestSelect.value);
+  const filtered = term ? availableRequests.filter((request) => requestFields(request)[field].some((value) => normalizeQuoteSearch(value).includes(normalizeQuoteSearch(term)))) : availableRequests;
+  renderRequestOptions(requestSelect.value, filtered);
+}
+
+function resetRequestFilter() {
+  if (requestFilterField) requestFilterField.value = 'all';
+  if (requestFilterInput) { requestFilterInput.value = ''; requestFilterInput.placeholder = requestFilterPlaceholders.all; requestFilterInput.hidden = false; }
+  if (requestDateFilter) { requestDateFilter.value = ''; requestDateFilter.hidden = true; }
 }
 
 function renderQuotes(entries = quotes) {
@@ -86,7 +141,7 @@ function renderQuotes(entries = quotes) {
 
 async function loadQuoteReferences() {
   const [requestsResult, suppliersResult] = await Promise.all([
-    quoteClient.from('purchase_requests').select('id,request_number,created_at,activity:activities(code,description),lines:purchase_request_items(quantity,item:items(description,material_number))').order('request_number', { ascending: false }),
+    quoteClient.from('purchase_requests').select('id,request_number,created_at,requester:profiles!purchase_requests_requested_by_fkey(full_name,email),activity:activities(code,description),lines:purchase_request_items(quantity,item:items(description,material_number))').order('request_number', { ascending: false }),
     quoteClient.from('suppliers').select('id,supplier_number,legal_name,payment_terms,active').eq('active', true).order('legal_name')
   ]);
   if (requestsResult.error) showQuoteNotice(`Não foi possível carregar as requisições: ${requestsResult.error.message}`, 'error');
@@ -100,13 +155,13 @@ async function loadQuotes() {
 }
 
 function resetQuoteForm() {
-  editingRequestId = null; quoteForm.reset(); requestSelect.disabled = false; renderRequestOptions(); renderQuoteOptions(); updateRequestSummary();
+  editingRequestId = null; quoteForm.reset(); requestSelect.disabled = false; resetRequestFilter(); renderRequestOptions(''); renderQuoteOptions(); updateRequestSummary();
   document.querySelector('[data-quote-kicker]').textContent = 'Nova cotação'; document.querySelector('[data-save-quote]').textContent = 'Salvar cotação'; quoteCancel.hidden = true;
 }
 
 function editQuote(requestId) {
   const group = quotes.filter((quote) => quote.purchase_request_id === requestId).sort((a, b) => Number(a.net_value) - Number(b.net_value)); if (!group.length) return;
-  editingRequestId = requestId; renderRequestOptions(requestId); requestSelect.disabled = true; renderQuoteOptions(group); updateRequestSummary();
+  editingRequestId = requestId; resetRequestFilter(); renderRequestOptions(requestId); requestSelect.disabled = true; renderQuoteOptions(group); updateRequestSummary();
   document.querySelector('[data-quote-kicker]').textContent = `Edição da cotação ${quoteRcCode(group[0].request?.request_number || '')}`; document.querySelector('[data-save-quote]').textContent = 'Salvar alterações'; quoteCancel.hidden = false; quoteForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -117,6 +172,16 @@ async function deleteQuoteGroup(requestId) {
 }
 
 quoteOptions.addEventListener('input', updateNetValues); addQuoteButton.addEventListener('click', addQuoteOption); requestSelect.addEventListener('change', updateRequestSummary); quoteCancel.addEventListener('click', resetQuoteForm);
+requestFilterInput?.addEventListener('input', applyRequestFilter);
+requestDateFilter?.addEventListener('change', applyRequestFilter);
+requestFilterField?.addEventListener('change', () => {
+  const useDate = requestFilterField.value === 'date';
+  requestFilterInput.hidden = useDate;
+  requestDateFilter.hidden = !useDate;
+  if (useDate) requestFilterInput.value = '';
+  else { requestDateFilter.value = ''; requestFilterInput.placeholder = requestFilterPlaceholders[requestFilterField.value] || requestFilterPlaceholders.all; }
+  applyRequestFilter();
+});
 
 quoteForm.addEventListener('submit', async (event) => {
   event.preventDefault(); const form = new FormData(quoteForm); const wasEditing = Boolean(editingRequestId); const requestId = editingRequestId || form.get('purchase_request_id');

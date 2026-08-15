@@ -15,7 +15,7 @@
 
       <section class="approval-summary" aria-label="Resumo das aprovações">
         <article><p>Aguardando decisão</p><strong data-approval-pending>0</strong><span>pedidos na fila</span></article>
-        <article><p>Aprovados</p><strong data-approval-approved>0</strong><span>PDF liberado</span></article>
+        <article><p>Aprovados</p><strong data-approval-approved>0</strong><span>pedidos aprovados</span></article>
         <article><p>Rejeitados</p><strong data-approval-rejected>0</strong><span>retornaram para pedidos</span></article>
       </section>
 
@@ -34,7 +34,7 @@
     <section class="approval-reason" data-approval-reason-section hidden><p class="kicker">Decisão comercial</p><h3>Motivo da escolha</h3><p data-approval-selection-reason></p></section>
     <section class="approval-history" data-approval-history-section hidden><p class="kicker">Última decisão</p><h3 data-approval-history-title></h3><p data-approval-history-text></p></section>
     <label class="approval-comments" data-approval-comments-wrap>Comentário da aprovação<textarea data-approval-comments placeholder="Opcional ao aprovar; obrigatório ao rejeitar"></textarea></label>
-    <div class="approval-dialog-actions" data-approval-actions><button class="secondary-button reject-button" type="button" data-reject-order>Rejeitar pedido</button><button class="primary-button" type="button" data-approve-order>Aprovar e liberar PDF</button></div>
+    <div class="approval-dialog-actions" data-approval-actions><button class="secondary-button reject-button" type="button" data-reject-order>Rejeitar pedido</button><button class="primary-button" type="button" data-approve-order>Aprovar pedido</button></div>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="approvals.js"></script>
