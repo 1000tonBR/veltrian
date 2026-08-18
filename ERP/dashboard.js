@@ -2,13 +2,25 @@ const managementClient = window.erpSupabase;
 const managementForm = document.querySelector('[data-dashboard-filters]');
 const managementNotice = document.querySelector('[data-notice]');
 let managementOrders = [];
+let managementDeliveries = [];
+let managementCharts = [];
+let managementLoaded = false;
 let managementNoticeTimer;
 
 const managementEscape = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 const managementMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const managementNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const managementCompactMoney = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(Number(value || 0));
+const managementNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const managementDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
 const managementActivity = (order) => order.request?.activity ? `${order.request.activity.code} · ${order.request.activity.description}` : 'Sem atividade';
-const chartColors = ['#20c5c8','#087d83','#46a6d8','#6b7fd7','#9b72cf','#e3905c','#e6bd3b','#57ad7a'];
+const chartColors = ['#14a6a1', '#346fe3', '#22b573', '#f29a38', '#8a5ed1', '#e0526f', '#40a6d9'];
+
+if (window.Chart) {
+  Chart.defaults.font.family = 'DM Sans, Arial, sans-serif';
+  Chart.defaults.color = '#61787e';
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.boxWidth = 8;
+}
 
 function showManagementNotice(text, type = 'error') {
   clearTimeout(managementNoticeTimer); managementNotice.textContent = text; managementNotice.dataset.type = type; managementNotice.classList.remove('is-visible'); requestAnimationFrame(() => managementNotice.classList.add('is-visible')); managementNoticeTimer = setTimeout(() => managementNotice.classList.remove('is-visible'), 5000);
@@ -30,39 +42,69 @@ function filteredManagementOrders() {
   return managementOrders.filter((order) => { const date = String(order.created_at || '').slice(0,10); if (start && date < start) return false; if (end && date > end) return false; if (activity && order.request?.activity?.id !== activity) return false; return true; });
 }
 
+function matchingDeliveries(entries) {
+  const ids = new Set(entries.map((order) => order.id));
+  return managementDeliveries.filter((delivery) => ids.has(delivery.purchase_order_id));
+}
+
 function renderManagementKpis(entries) {
-  const gross = entries.reduce((sum, order) => sum + Number(order.gross_value || 0), 0); const saving = entries.reduce((sum, order) => sum + Number(order.discount_value || 0), 0); const net = entries.reduce((sum, order) => sum + Number(order.total_value || 0), 0); const suppliers = new Set(entries.map((order) => order.supplier?.id).filter(Boolean));
-  document.querySelector('[data-dashboard-net]').textContent = managementMoney(net); document.querySelector('[data-dashboard-orders]').textContent = `${entries.length} ${entries.length === 1 ? 'pedido' : 'pedidos'}`; document.querySelector('[data-dashboard-saving]').textContent = managementMoney(saving); document.querySelector('[data-dashboard-saving-rate]').textContent = `${managementNumber(gross ? saving / gross * 100 : 0)}% do bruto`; document.querySelector('[data-dashboard-ticket]').textContent = managementMoney(entries.length ? net / entries.length : 0); document.querySelector('[data-dashboard-suppliers]').textContent = suppliers.size;
+  const gross = entries.reduce((sum, order) => sum + Number(order.gross_value || 0), 0); const saving = entries.reduce((sum, order) => sum + Number(order.discount_value || 0), 0); const net = entries.reduce((sum, order) => sum + Number(order.total_value || 0), 0); const suppliers = new Set(entries.map((order) => order.supplier?.id).filter(Boolean)); const deliveries = matchingDeliveries(entries); const received = deliveries.filter((delivery) => delivery.status === 'recebido').length; const rate = deliveries.length ? received / deliveries.length * 100 : 0;
+  document.querySelector('[data-dashboard-net]').textContent = managementMoney(net); document.querySelector('[data-dashboard-orders]').textContent = `${entries.length} ${entries.length === 1 ? 'pedido' : 'pedidos'}`; document.querySelector('[data-dashboard-saving]').textContent = managementMoney(saving); document.querySelector('[data-dashboard-saving-rate]').textContent = `${managementNumber(gross ? saving / gross * 100 : 0)}% do bruto`; document.querySelector('[data-dashboard-ticket]').textContent = managementMoney(entries.length ? net / entries.length : 0); document.querySelector('[data-dashboard-suppliers]').textContent = suppliers.size; document.querySelector('[data-dashboard-received-rate]').textContent = `${managementNumber(rate)}%`; document.querySelector('[data-dashboard-email-summary]').textContent = `${received} de ${deliveries.length} enviados`;
 }
 
-function renderActivityBars(entries) {
-  const groups = groupOrders(entries, (order) => order.request?.activity?.id || 'none', managementActivity).sort((a,b) => b.saving - a.saving).slice(0,8); const target = document.querySelector('[data-activity-chart]'); const total = groups.reduce((sum, group) => sum + group.saving, 0); document.querySelector('[data-dashboard-activity-total]').textContent = `${managementMoney(total)} economizados`;
-  if (!groups.length || !groups.some((group) => group.saving > 0)) { target.innerHTML = '<div class="chart-empty">Ainda não há descontos no período selecionado.</div>'; return; }
-  const max = Math.max(...groups.map((group) => group.saving)); const width = 900; const rowHeight = 42; const height = groups.length * rowHeight + 35; const bars = groups.map((group,index) => { const y = 15 + index * rowHeight; const barWidth = max ? group.saving / max * 560 : 0; return `<text class="chart-axis-label" x="0" y="${y + 17}">${managementEscape(group.label.slice(0,34))}</text><rect class="chart-bar" x="245" y="${y}" width="${barWidth}" height="24" rx="6"></rect><text class="chart-value" x="${Math.min(820, 255 + barWidth)}" y="${y + 17}">${managementEscape(managementMoney(group.saving))}</text>`; }).join('');
-  target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Saving por atividade</title>${bars}</svg>`;
+function destroyCharts() { managementCharts.forEach((chart) => chart.destroy()); managementCharts = []; }
+function currencyTooltip(context) { return `${context.dataset.label || ''}: ${managementMoney(context.raw)}`; }
+function chartOrMessage(canvas, hasData, message) {
+  const shell = canvas.parentElement; shell.querySelector('.chart-empty')?.remove(); canvas.hidden = !hasData;
+  if (!hasData) shell.insertAdjacentHTML('beforeend', `<p class="chart-empty">${managementEscape(message)}</p>`);
+  return Boolean(hasData);
 }
 
-function renderSupplierDonut(entries) {
-  const groups = groupOrders(entries, (order) => order.supplier?.id || 'none', (order) => order.supplier?.legal_name || 'Fornecedor removido').sort((a,b) => b.net - a.net).slice(0,8); const total = groups.reduce((sum, group) => sum + group.net, 0); const chart = document.querySelector('[data-supplier-chart]'); const legend = document.querySelector('[data-supplier-legend]');
-  if (!total) { chart.style.background = '#edf3f3'; legend.innerHTML = '<div class="chart-empty">Sem compras aprovadas no período.</div>'; return; }
-  let cursor = 0; const segments = groups.map((group,index) => { const start = cursor; cursor += group.net / total * 100; return `${chartColors[index % chartColors.length]} ${start}% ${cursor}%`; }); chart.style.background = `conic-gradient(${segments.join(',')})`; chart.setAttribute('aria-label', groups.map((group) => `${group.label}: ${managementNumber(group.net / total * 100)}%`).join('; '));
-  legend.innerHTML = groups.map((group,index) => `<div><i style="background:${chartColors[index % chartColors.length]}"></i><span>${managementEscape(group.label)}</span><strong>${managementNumber(group.net / total * 100)}%</strong></div>`).join('');
+function renderMonthlyChart(entries) {
+  const canvas = document.querySelector('[data-monthly-chart]'); const groups = groupOrders(entries, (order) => String(order.created_at || '').slice(0,7), (order) => String(order.created_at || '').slice(0,7)).filter((group) => group.key).sort((a,b) => a.key.localeCompare(b.key)).slice(-12);
+  if (!chartOrMessage(canvas, groups.length, 'Ainda não há histórico financeiro no período selecionado.')) return;
+  managementCharts.push(new Chart(canvas, { type: 'bar', data: { labels: groups.map((group) => { const [year, month] = group.key.split('-'); return `${month}/${String(year).slice(2)}`; }), datasets: [{ label: 'Volume comprado', data: groups.map((group) => group.net), backgroundColor: '#246fdb', borderRadius: 7, maxBarThickness: 42 }, { label: 'Saving', data: groups.map((group) => group.saving), type: 'line', borderColor: '#20b978', backgroundColor: 'rgba(32,185,120,.16)', pointBackgroundColor: '#fff', pointBorderColor: '#20b978', pointBorderWidth: 3, pointRadius: 4, borderWidth: 3, tension: .38, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { x: { grid: { display: false }, border: { display: false } }, y: { beginAtZero: true, border: { display: false }, grid: { color: '#e9efef' }, ticks: { callback: managementCompactMoney } } }, plugins: { legend: { position: 'top', align: 'end' }, tooltip: { callbacks: { label: currencyTooltip } } } } }));
 }
 
-function renderDiscountLine(entries) {
-  const groups = groupOrders(entries, (order) => String(order.created_at || '').slice(0,7), (order) => String(order.created_at || '').slice(0,7)).filter((group) => group.key).sort((a,b) => a.key.localeCompare(b.key)).slice(-12); const target = document.querySelector('[data-discount-chart]');
-  if (!groups.length) { target.innerHTML = '<div class="chart-empty">Sem histórico aprovado para exibir.</div>'; return; }
-  const width = 720; const height = 300; const left = 48; const right = 20; const top = 25; const bottom = 48; const max = Math.max(...groups.map((group) => group.saving), 1); const plotWidth = width-left-right; const plotHeight = height-top-bottom; const points = groups.map((group,index) => ({ ...group, x: left + (groups.length === 1 ? plotWidth/2 : index/(groups.length-1)*plotWidth), y: top + plotHeight - group.saving/max*plotHeight })); const line = points.map((point) => `${point.x},${point.y}`).join(' '); const area = `${left},${top+plotHeight} ${line} ${left+plotWidth},${top+plotHeight}`;
-  const grid = [0,.25,.5,.75,1].map((ratio) => { const y=top+plotHeight-ratio*plotHeight; return `<line class="chart-grid-line" x1="${left}" y1="${y}" x2="${left+plotWidth}" y2="${y}"></line><text class="chart-axis-label" x="0" y="${y+4}">${managementEscape(managementMoney(max*ratio).replace(/,00$/, ''))}</text>`; }).join(''); const labels = points.map((point) => { const [year,month]=point.key.split('-'); return `<circle class="chart-point" cx="${point.x}" cy="${point.y}" r="5"></circle><text class="chart-axis-label" text-anchor="middle" x="${point.x}" y="${height-18}">${month}/${String(year).slice(2)}</text>`; }).join('');
-  target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Evolução mensal do desconto</title>${grid}<polygon class="chart-area" points="${area}"></polygon><polyline class="chart-line" points="${line}"></polyline>${labels}</svg>`;
+function renderStatusChart(entries) {
+  const canvas = document.querySelector('[data-status-chart]'); const statuses = [{ key: 'aprovado', label: 'Aprovados', color: '#346fe3' }, { key: 'enviado', label: 'Enviados', color: '#f29a38' }, { key: 'recebido', label: 'Recebidos', color: '#22b573' }]; const values = statuses.map((status) => entries.filter((order) => order.status === status.key).length); const total = values.reduce((sum, value) => sum + value, 0); document.querySelector('[data-dashboard-status-total]').textContent = total;
+  if (!chartOrMessage(canvas, total, 'Nenhum pedido aprovado no período.')) return;
+  managementCharts.push(new Chart(canvas, { type: 'doughnut', data: { labels: statuses.map((status) => status.label), datasets: [{ data: values, backgroundColor: statuses.map((status) => status.color), borderColor: '#fff', borderWidth: 5, hoverOffset: 6 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } } }));
 }
 
-function renderManagementDashboard() { const entries = filteredManagementOrders(); renderManagementKpis(entries); renderActivityBars(entries); renderSupplierDonut(entries); renderDiscountLine(entries); }
+function renderSupplierChart(entries) {
+  const canvas = document.querySelector('[data-supplier-chart]'); const groups = groupOrders(entries, (order) => order.supplier?.id || 'none', (order) => order.supplier?.legal_name || 'Fornecedor removido').sort((a,b) => b.net - a.net).slice(0,7);
+  if (!chartOrMessage(canvas, groups.length && groups.some((group) => group.net > 0), 'Sem compras aprovadas no período.')) return;
+  managementCharts.push(new Chart(canvas, { type: 'bar', data: { labels: groups.map((group) => group.label), datasets: [{ label: 'Volume', data: groups.map((group) => group.net), backgroundColor: groups.map((_, index) => chartColors[index % chartColors.length]), borderRadius: 7, barThickness: 20 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, border: { display: false }, grid: { color: '#eef2f2' }, ticks: { callback: managementCompactMoney } }, y: { border: { display: false }, grid: { display: false } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: currencyTooltip } } } } }));
+}
+
+function renderActivityChart(entries) {
+  const canvas = document.querySelector('[data-activity-chart]'); const groups = groupOrders(entries, (order) => order.request?.activity?.id || 'none', managementActivity).sort((a,b) => b.saving - a.saving).slice(0,7); const total = groups.reduce((sum, group) => sum + group.saving, 0); document.querySelector('[data-dashboard-activity-total]').textContent = `${managementMoney(total)} economizados`;
+  if (!chartOrMessage(canvas, total > 0, 'Ainda não há descontos no período selecionado.')) return;
+  managementCharts.push(new Chart(canvas, { type: 'bar', data: { labels: groups.map((group) => group.label), datasets: [{ label: 'Saving', data: groups.map((group) => group.saving), backgroundColor: '#20b978', borderRadius: 7, barThickness: 20 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, border: { display: false }, grid: { color: '#eef2f2' }, ticks: { callback: managementCompactMoney } }, y: { border: { display: false }, grid: { display: false } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: currencyTooltip } } } } }));
+}
+
+function renderEmailTracking(entries) {
+  const deliveries = matchingDeliveries(entries).sort((a,b) => new Date(b.sent_at) - new Date(a.sent_at)); const received = deliveries.filter((delivery) => delivery.status === 'recebido').length; const rate = deliveries.length ? received / deliveries.length * 100 : 0;
+  document.querySelector('[data-email-received]').textContent = received; document.querySelector('[data-email-sent]').textContent = deliveries.length; document.querySelector('[data-email-progress-bar]').style.width = `${rate}%`;
+  const ordersById = new Map(entries.map((order) => [order.id, order])); const target = document.querySelector('[data-delivery-list]');
+  target.innerHTML = deliveries.length ? deliveries.slice(0,6).map((delivery) => { const order = ordersById.get(delivery.purchase_order_id); const isReceived = delivery.status === 'recebido'; return `<div class="delivery-item ${isReceived ? 'received' : ''}"><i></i><div><strong>PC-${String(order?.order_number || '').padStart(4,'0')} · ${managementEscape(order?.supplier?.legal_name)}</strong><span>${managementEscape(delivery.recipient_email)}</span></div><div><b>${isReceived ? 'Recebido' : 'Enviado'}</b><time>${managementDate(isReceived ? delivery.received_at : delivery.sent_at)}</time></div></div>`; }).join('') : '<p class="chart-empty">Nenhum pedido foi enviado por e-mail ainda.</p>';
+}
+
+function renderManagementDashboard() { const entries = filteredManagementOrders(); destroyCharts(); renderManagementKpis(entries); renderMonthlyChart(entries); renderStatusChart(entries); renderSupplierChart(entries); renderActivityChart(entries); renderEmailTracking(entries); }
 
 async function loadManagementData() {
-  const { data, error } = await managementClient.from('purchase_orders').select('id,order_number,gross_value,discount_value,total_value,status,created_at,supplier:suppliers!purchase_orders_supplier_id_fkey(id,legal_name),request:purchase_requests!purchase_orders_purchase_request_id_fkey(id,activity:activities(id,code,description))').in('status', ['aprovado','enviado','recebido']).order('created_at');
-  if (error) return showManagementNotice(`Não foi possível carregar o Dashboard: ${error.message}`);
-  managementOrders = data || []; populateActivityFilter(); renderManagementDashboard();
+  if (managementLoaded) return;
+  managementLoaded = true;
+  const [ordersResult, deliveriesResult] = await Promise.all([
+    managementClient.from('purchase_orders').select('id,order_number,gross_value,discount_value,total_value,status,created_at,supplier:suppliers!purchase_orders_supplier_id_fkey(id,legal_name),request:purchase_requests!purchase_orders_purchase_request_id_fkey(id,activity:activities(id,code,description))').in('status', ['aprovado','enviado','recebido']).order('created_at'),
+    managementClient.from('order_email_deliveries').select('purchase_order_id,recipient_email,status,sent_at,received_at').order('sent_at', { ascending: false })
+  ]);
+  if (ordersResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar o Dashboard: ${ordersResult.error.message}`); }
+  if (deliveriesResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar os envios: ${deliveriesResult.error.message}`); }
+  managementOrders = ordersResult.data || []; managementDeliveries = deliveriesResult.data || []; populateActivityFilter(); document.querySelector('[data-dashboard-updated]').textContent = `· atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; renderManagementDashboard();
 }
 
-managementForm.addEventListener('input', renderManagementDashboard); managementForm.addEventListener('change', renderManagementDashboard); managementForm.addEventListener('reset', () => setTimeout(renderManagementDashboard)); loadManagementData();
+managementForm.addEventListener('input', renderManagementDashboard); managementForm.addEventListener('change', renderManagementDashboard); managementForm.addEventListener('reset', () => setTimeout(renderManagementDashboard));
+managementClient.auth.getSession().then(({ data: { session } }) => { if (session) loadManagementData(); });
+managementClient.auth.onAuthStateChange((_event, session) => { if (session) setTimeout(loadManagementData); });

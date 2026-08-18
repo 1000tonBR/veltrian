@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Veltrian ERP | Dashboard</title>
+  <title>Veltrian ERP | Dashboard gerencial</title>
   <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="navigation.css"><link rel="stylesheet" href="modules.css"><link rel="stylesheet" href="dashboard.css">
 </head>
 <body class="auth-pending">
@@ -10,25 +10,28 @@
   <div class="app-shell">
     <aside class="sidebar"><a class="erp-brand" href="../"><span class="brand-symbol">V</span><span>VELTRIAN</span></a><p class="app-label">ERP · Compras</p><nav class="side-nav" aria-label="Navegação do ERP"><a href="index.html">Visão geral</a><a class="active" href="dashboard.html">Dashboard</a><a href="rc.html">Requisições de compra</a><a href="quotes.html">Cotações</a><a href="orders.html">Pedidos</a><a href="approvals.html">Aprovações</a><a href="reports.html">Relatórios</a><span class="nav-divider" role="separator"></span><a href="materials.html">Materiais</a><a href="suppliers.html">Fornecedor</a><a href="clients.html">Clientes</a></nav><a class="back-link" href="../">← Voltar ao site</a></aside>
     <main class="content management-dashboard">
-      <header class="topbar"><div><p class="kicker">Visão gerencial</p><h1>Dashboard</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" data-sign-out>Sair</button></div></header>
+      <header class="topbar"><div><p class="kicker">Central de inteligência de compras</p><h1>Dashboard gerencial</h1></div><div class="profile-area"><span class="user-email" data-user-email></span><button class="profile" data-sign-out>Sair</button></div></header>
       <div class="database-toast" data-notice aria-live="polite" role="status"></div>
-
-      <section class="dashboard-hero"><div><p class="kicker aqua">Performance de compras</p><h2>Saving, volume e evolução comercial em uma visão.</h2><p>Os indicadores consideram pedidos aprovados e podem ser refinados por período e atividade.</p></div><form class="dashboard-filters" data-dashboard-filters><label>De<input name="date_start" type="date"></label><label>Até<input name="date_end" type="date"></label><label>Atividade<select name="activity"><option value="">Todas as atividades</option></select></label><button class="secondary-button" type="reset">Limpar</button></form></section>
-
-      <section class="dashboard-kpis" aria-label="Indicadores gerenciais">
-        <article><span>Volume aprovado</span><strong data-dashboard-net>R$ 0,00</strong><small data-dashboard-orders>0 pedidos</small></article>
-        <article><span>Saving obtido</span><strong data-dashboard-saving>R$ 0,00</strong><small data-dashboard-saving-rate>0,00% do bruto</small></article>
-        <article><span>Ticket médio</span><strong data-dashboard-ticket>R$ 0,00</strong><small>por pedido aprovado</small></article>
-        <article><span>Fornecedores</span><strong data-dashboard-suppliers>0</strong><small>com compras no período</small></article>
+      <section class="dashboard-hero">
+        <div class="hero-copy"><div class="dashboard-live"><i></i> Dados do Supabase <span data-dashboard-updated></span></div><p class="kicker">Performance de compras</p><h2>Decisões mais rápidas, com uma visão clara do que gera valor.</h2><p>Volume, saving, concentração de fornecedores e andamento dos pedidos em dados reais.</p></div>
+        <form class="dashboard-filters" data-dashboard-filters><label>Período inicial<input name="date_start" type="date"></label><label>Período final<input name="date_end" type="date"></label><label>Atividade<select name="activity"><option value="">Todas as atividades</option></select></label><button class="dashboard-reset" type="reset">Limpar filtros</button></form>
       </section>
-
-      <section class="dashboard-charts">
-        <article class="dashboard-chart chart-wide"><div class="chart-heading"><div><h2>Saving por atividade</h2></div><span data-dashboard-activity-total></span></div><div class="svg-chart" data-activity-chart aria-label="Gráfico de saving por atividade"></div></article>
-        <article class="dashboard-chart"><div class="chart-heading"><div><h2>Compras por fornecedor</h2></div></div><div class="donut-layout"><div class="donut-chart" data-supplier-chart role="img" aria-label="Participação das compras por fornecedor"></div><div class="donut-legend" data-supplier-legend></div></div></article>
-        <article class="dashboard-chart"><div class="chart-heading"><div><p class="kicker">Evolução</p><h2>Desconto por mês</h2></div></div><div class="svg-chart" data-discount-chart aria-label="Gráfico da evolução mensal de descontos"></div></article>
+      <section class="dashboard-kpis" aria-label="Indicadores gerenciais">
+        <article class="kpi-volume"><div class="kpi-icon">R$</div><span>Volume comprado</span><strong data-dashboard-net>R$ 0,00</strong><small data-dashboard-orders>0 pedidos</small></article>
+        <article class="kpi-saving"><div class="kpi-icon">↓</div><span>Saving capturado</span><strong data-dashboard-saving>R$ 0,00</strong><small data-dashboard-saving-rate>0,00% do bruto</small></article>
+        <article class="kpi-ticket"><div class="kpi-icon">↗</div><span>Ticket médio</span><strong data-dashboard-ticket>R$ 0,00</strong><small>por pedido aprovado</small></article>
+        <article class="kpi-suppliers"><div class="kpi-icon">◆</div><span>Fornecedores ativos</span><strong data-dashboard-suppliers>0</strong><small>com compras no período</small></article>
+        <article class="kpi-email"><div class="kpi-icon">✓</div><span>Pedidos recebidos</span><strong data-dashboard-received-rate>0%</strong><small data-dashboard-email-summary>0 de 0 enviados</small></article>
+      </section>
+      <section class="dashboard-grid">
+        <article class="dashboard-card chart-main"><div class="chart-heading"><div><p class="kicker">Evolução financeira</p><h2>Compras e saving por mês</h2></div><span>Últimos 12 meses filtrados</span></div><div class="chart-canvas chart-canvas-main"><canvas data-monthly-chart aria-label="Evolução mensal do volume de compras e saving"></canvas></div></article>
+        <article class="dashboard-card"><div class="chart-heading"><div><p class="kicker">Pipeline</p><h2>Situação dos pedidos</h2></div></div><div class="donut-panel"><div class="chart-canvas chart-canvas-donut"><canvas data-status-chart aria-label="Distribuição dos pedidos por status"></canvas></div><div class="donut-total"><strong data-dashboard-status-total>0</strong><span>pedidos</span></div></div></article>
+        <article class="dashboard-card"><div class="chart-heading"><div><p class="kicker">Concentração</p><h2>Compras por fornecedor</h2></div><span>Top 7</span></div><div class="chart-canvas"><canvas data-supplier-chart aria-label="Volume de compras por fornecedor"></canvas></div></article>
+        <article class="dashboard-card"><div class="chart-heading"><div><p class="kicker">Eficiência</p><h2>Saving por atividade</h2></div><span data-dashboard-activity-total></span></div><div class="chart-canvas"><canvas data-activity-chart aria-label="Saving por atividade"></canvas></div></article>
+        <article class="dashboard-card email-card"><div class="chart-heading"><div><p class="kicker">Confirmação do fornecedor</p><h2>Acompanhamento de e-mails</h2></div><a href="orders.html">Ver pedidos →</a></div><div class="email-progress"><div><strong data-email-received>0</strong><span>Recebidos</span></div><div><strong data-email-sent>0</strong><span>Enviados</span></div><div class="email-progress-track"><i data-email-progress-bar></i></div></div><div class="delivery-list" data-delivery-list><p class="chart-empty">Nenhum pedido foi enviado por e-mail ainda.</p></div></article>
       </section>
     </main>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="dashboard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0"></script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="dashboard.js"></script>
 </body>
 </html>
