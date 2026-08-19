@@ -102,7 +102,7 @@ async function loadManagementData() {
   ]);
   if (ordersResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar o Dashboard: ${ordersResult.error.message}`); }
   if (deliveriesResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar os envios: ${deliveriesResult.error.message}`); }
-  managementOrders = ordersResult.data || []; managementDeliveries = deliveriesResult.data || []; populateActivityFilter(); document.querySelector('[data-dashboard-updated]').textContent = `· atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; renderManagementDashboard();
+  managementOrders = ordersResult.data || []; managementDeliveries = deliveriesResult.data || []; populateActivityFilter(); renderManagementDashboard();
 }
 
 managementForm.addEventListener('input', renderManagementDashboard); managementForm.addEventListener('change', renderManagementDashboard); managementForm.addEventListener('reset', () => setTimeout(renderManagementDashboard));

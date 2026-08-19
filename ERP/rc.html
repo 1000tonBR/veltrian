@@ -19,7 +19,7 @@
       <div class="module-tabs"><button class="active" data-tab="rcs">Requisições</button><button data-tab="activities">Atividades</button></div>
 
       <section class="module-panel active" data-panel="rcs">
-        <div class="module-grid">
+        <div class="module-grid module-stack">
           <form class="form-card" data-rc-form>
             <input type="hidden" name="record_id"><input type="hidden" name="line_id">
             <p class="kicker aqua" data-rc-kicker>Nova requisição</p><h2 data-rc-title>Criar requisição</h2>
@@ -49,7 +49,7 @@
         </div>
       </section>
 
-      <section class="module-panel" data-panel="activities"><div class="module-grid">
+      <section class="module-panel" data-panel="activities"><div class="module-grid module-stack">
         <form class="form-card" data-activity-form><input type="hidden" name="record_id"><p class="kicker aqua" data-activity-kicker>Nova atividade</p><h2>Cadastro de atividade</h2><div class="form-grid"><label>Código<input name="code" placeholder="Ex.: MAN-010" required></label><label class="full">Descrição<textarea name="description" placeholder="Ex.: Manutenção preventiva" required></textarea></label></div><div class="form-actions"><button class="primary-button" data-save-activity>Salvar atividade</button><button class="secondary-button" type="button" data-cancel-activity hidden>Cancelar edição</button></div></form>
         <div class="catalog-card"><p class="kicker">Consulta</p><h2>Atividades cadastradas</h2><input class="table-filter" data-activity-filter placeholder="Filtrar por código ou descrição"><div class="table-wrap"><table><thead><tr><th>Código</th><th>Descrição</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody data-activities-rows><tr><td colspan="4" class="empty-cell">Carregando atividades…</td></tr></tbody></table></div></div>
       </div></section>

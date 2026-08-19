@@ -9,6 +9,10 @@ const orderRequestFilterField = document.querySelector('[data-order-request-filt
 const orderRequestFilterInput = document.querySelector('[data-order-request-filter]');
 const orderRequestDateFilter = document.querySelector('[data-order-request-date-filter]');
 const orderRequestResultCount = document.querySelector('[data-order-request-result-count]');
+const orderListFilterField = document.querySelector('[data-order-list-filter-field]');
+const orderListFilterInput = document.querySelector('[data-order-filter]');
+const orderStatusFilter = document.querySelector('[data-order-status-filter]');
+const orderListResultCount = document.querySelector('[data-order-list-result-count]');
 let allQuotes = [];
 let orders = [];
 let emailDeliveries = new Map();
@@ -35,6 +39,13 @@ const orderRequestFilterPlaceholders = {
   rc: 'Digite o número da RC',
   material: 'Digite o código ou a descrição do material',
   requester: 'Digite o nome ou e-mail do solicitante'
+};
+const orderListFilterPlaceholders = {
+  all: 'Digite pedido, RC, material ou fornecedor',
+  order: 'Digite o número do pedido',
+  rc: 'Digite o número da RC',
+  supplier: 'Digite o nome do fornecedor',
+  material: 'Digite o código ou a descrição do material'
 };
 
 function orderStatusBadge(status) {
@@ -130,6 +141,29 @@ function renderOrders(entries = orders) {
     const actions = `${pdfReady ? `<button type="button" class="row-button send-order-button" data-pdf-order="${order.id}">${delivery ? 'Reenviar por e-mail' : 'Gerar e enviar'}</button>` : ''}${editable ? `<button type="button" class="row-button" data-edit-order="${order.id}">${order.status === 'reprovado' ? 'Revisar e reenviar' : 'Editar'}</button>` : ''}${deletable ? `<button type="button" class="row-button danger" data-delete-order="${order.id}">Excluir</button>` : ''}`;
     return `<tr><td>${orderCode(order.order_number)}</td><td>${orderRcCode(order.request?.request_number || '')}</td><td>${escapeOrder(order.supplier?.legal_name)}</td><td>${escapeOrder(orderMaterial(order.request))}</td><td><strong>${orderMoney(order.total_value)}</strong></td><td>${escapeOrder(order.selection_reason || 'Menor preço')}</td><td>${orderStatusBadge(order.status)}</td><td>${orderEmailBadge(delivery)}</td><td>${orderDate(order.created_at)}</td><td class="table-actions">${actions || '—'}</td></tr>`;
   }).join('') : '<tr><td colspan="10" class="empty-cell">Nenhum pedido emitido.</td></tr>';
+  if (orderListResultCount) orderListResultCount.textContent = entries.length === 1 ? '1 pedido encontrado' : `${entries.length} pedidos encontrados`;
+}
+
+function orderListFields(order) {
+  return {
+    order: [orderCode(order.order_number), order.order_number],
+    rc: [orderRcCode(order.request?.request_number || ''), order.request?.request_number],
+    supplier: [order.supplier?.legal_name, order.supplier?.trade_name],
+    material: [orderMaterial(order.request)],
+    all: [orderCode(order.order_number), order.order_number, orderRcCode(order.request?.request_number || ''), order.request?.request_number, order.supplier?.legal_name, order.supplier?.trade_name, orderMaterial(order.request)]
+  };
+}
+
+function applyOrderListFilters() {
+  const field = orderListFilterField?.value || 'all';
+  const term = normalizeOrderSearch(orderListFilterInput?.value);
+  const status = orderStatusFilter?.value || 'all';
+  const filtered = orders.filter((order) => {
+    const matchesTerm = !term || orderListFields(order)[field].some((value) => normalizeOrderSearch(value).includes(term));
+    const matchesStatus = status === 'all' || order.status === status;
+    return matchesTerm && matchesStatus;
+  });
+  renderOrders(filtered);
 }
 
 async function loadAllQuotes() {
@@ -225,7 +259,12 @@ orderForm.addEventListener('submit', async (event) => {
 });
 
 document.querySelector('[data-orders-rows]').addEventListener('click', (event) => { const pdf = event.target.closest('[data-pdf-order]'); const edit = event.target.closest('[data-edit-order]'); const remove = event.target.closest('[data-delete-order]'); if (pdf) generateOrderPdf(pdf.dataset.pdfOrder); if (edit) editOrder(edit.dataset.editOrder); if (remove) deleteOrder(remove.dataset.deleteOrder); });
-document.querySelector('[data-order-filter]').addEventListener('input', (event) => { const term = event.target.value.trim().toLocaleLowerCase('pt-BR'); renderOrders(orders.filter((order) => [orderCode(order.order_number), order.order_number, orderRcCode(order.request?.request_number || ''), orderMaterial(order.request), order.supplier?.legal_name].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term)))); });
+orderListFilterInput?.addEventListener('input', applyOrderListFilters);
+orderStatusFilter?.addEventListener('change', applyOrderListFilters);
+orderListFilterField?.addEventListener('change', () => {
+  if (orderListFilterInput) orderListFilterInput.placeholder = orderListFilterPlaceholders[orderListFilterField.value] || orderListFilterPlaceholders.all;
+  applyOrderListFilters();
+});
 
 function initializeOrders() {
   if (ordersInitialized) return;
