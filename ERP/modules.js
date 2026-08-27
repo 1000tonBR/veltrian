@@ -41,7 +41,7 @@ function materialFields(material) {
 
 function materialOptionLabel(material) {
   const details = [material.manufacturer, material.serial_number].filter(Boolean).map(escapeHtml).join(' · ');
-  return `${escapeHtml(materialCode(material.material_number))} · ${escapeHtml(material.description)}${details ? ` — ${details}` : ''}`;
+  return `${escapeHtml(materialCode(material.material_number))} · ${escapeHtml(material.description)} · ${escapeHtml(material.unit_of_measure)}${details ? ` — ${details}` : ''}`;
 }
 
 function renderMaterialOptions(entries = materials, selectedId = materialSelect?.value || '') {
@@ -111,8 +111,8 @@ function renderRequests(entries = requests) {
     const statuses = { rascunho: '<span class="status pending">Pedido em preparação</span>', em_aprovacao: '<span class="status approval">Em aprovação</span>', aprovado: '<span class="status approved">Pedido aprovado</span>', reprovado: '<span class="status rejected">Pedido rejeitado</span>', enviado: '<span class="status issued">Pedido emitido</span>', recebido: '<span class="status issued">Pedido recebido</span>', cancelado: '<span class="status cancelled">Pedido cancelado</span>' };
     const workflowStatus = order ? statuses[order.status] || `<span class="status pending">${escapeHtml(order.status)}</span>` : '<span class="status pending">Sem pedido emitido</span>';
     const completed = order && ['aprovado','enviado','recebido'].includes(order.status);
-    return `<tr class="${completed ? 'order-issued-row' : ''}"><td>${rcCode(rc.request_number)}</td><td><strong>${orderCode(order?.order_number)}</strong></td><td>${materialCode(line?.item?.material_number)}</td><td>${escapeHtml(material)}</td><td>${escapeHtml(line?.quantity)}</td><td><span class="priority ${escapeHtml(rc.priority)}">${escapeHtml(rc.priority)}</span></td><td>${escapeHtml(activity)}</td><td>${escapeHtml(requester)}</td><td>${workflowStatus}</td><td>${formatDate(rc.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-rc="${rc.id}">Editar</button><button type="button" class="row-button danger" data-delete-rc="${rc.id}">Excluir</button></td></tr>`;
-  }, 11);
+    return `<tr class="${completed ? 'order-issued-row' : ''}"><td>${rcCode(rc.request_number)}</td><td><strong>${orderCode(order?.order_number)}</strong></td><td>${materialCode(line?.item?.material_number)}</td><td>${escapeHtml(material)}</td><td>${escapeHtml(line?.item?.unit_of_measure)}</td><td>${escapeHtml(line?.quantity)}</td><td><span class="priority ${escapeHtml(rc.priority)}">${escapeHtml(rc.priority)}</span></td><td>${escapeHtml(activity)}</td><td>${escapeHtml(requester)}</td><td>${workflowStatus}</td><td>${formatDate(rc.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-rc="${rc.id}">Editar</button><button type="button" class="row-button danger" data-delete-rc="${rc.id}">Excluir</button></td></tr>`;
+  }, 12);
 }
 
 async function loadMaterials() {
@@ -132,7 +132,7 @@ async function loadActivities() {
 }
 
 async function loadRequests() {
-  const { data, error } = await moduleClient.from('purchase_requests').select('id, request_number, title, description, priority, status, activity_id, requested_by, created_at, requester:profiles!purchase_requests_requested_by_fkey(full_name,email), activity:activities(code,description), lines:purchase_request_items(id,item_id,quantity,notes,item:items(id,description,material_number)), orders:purchase_orders!purchase_orders_purchase_request_id_fkey(order_number,status,created_at)').order('created_at', { ascending: false });
+  const { data, error } = await moduleClient.from('purchase_requests').select('id, request_number, title, description, priority, status, activity_id, requested_by, created_at, requester:profiles!purchase_requests_requested_by_fkey(full_name,email), activity:activities(code,description), lines:purchase_request_items(id,item_id,quantity,notes,item:items(id,description,material_number,unit_of_measure)), orders:purchase_orders!purchase_orders_purchase_request_id_fkey(order_number,status,created_at)').order('created_at', { ascending: false });
   if (error) return showNotice(`Não foi possível carregar as requisições: ${error.message}`, 'error');
   requests = data || [];
   renderRequests();

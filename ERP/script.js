@@ -4,12 +4,14 @@ const dashboardLoginMessage = document.querySelector('[data-login-message]');
 const dashboardNotice = document.querySelector('[data-dashboard-notice]');
 const dashboardUserName = document.querySelector('[data-user-name]');
 const dashboardUserEmail = document.querySelector('[data-user-email]');
+document.querySelectorAll('.side-nav').forEach((nav) => { if (nav.querySelector('a[href="mrp.html"]')) return; const reports = nav.querySelector('a[href="reports.html"]'); if (reports) { const link = document.createElement('a'); link.href = 'mrp.html'; link.textContent = 'MRP'; nav.insertBefore(link, reports); } });
 
 const dashboardEscape = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 const dashboardMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dashboardDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(value)) : '—';
 const dashboardRcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
 const dashboardMaterial = (request) => request.lines?.map((line) => `${line.item?.material_number ? `MAT-${String(line.item.material_number).padStart(4, '0')} · ` : ''}${line.item?.description || ''}`).filter(Boolean).join(', ') || '—';
+const dashboardMaterialUnit = (request) => request.lines?.map((line) => line.item?.unit_of_measure || '—').join(', ') || '—';
 
 function showDashboardError(text) {
   dashboardNotice.textContent = text; dashboardNotice.dataset.type = 'error'; dashboardNotice.classList.add('is-visible');
@@ -27,7 +29,7 @@ function setDashboardLoginRequired(message = '') {
 
 async function loadDashboard() {
   const [requestsResult, suppliersResult] = await Promise.all([
-    dashboardClient.from('purchase_requests').select('id,request_number,status,priority,created_at,lines:purchase_request_items(quantity,item:items(description,material_number)),quotes(id,net_value,selected,supplier:suppliers(legal_name)),orders:purchase_orders(id,order_number,status,sent_at)').order('created_at', { ascending: false }),
+    dashboardClient.from('purchase_requests').select('id,request_number,status,priority,created_at,lines:purchase_request_items(quantity,item:items(description,material_number,unit_of_measure)),quotes(id,net_value,selected,supplier:suppliers(legal_name)),orders:purchase_orders(id,order_number,status,sent_at)').order('created_at', { ascending: false }),
     dashboardClient.from('suppliers').select('id', { count: 'exact', head: true }).eq('active', true)
   ]);
   if (requestsResult.error) return showDashboardError(`Não foi possível carregar o overview: ${requestsResult.error.message}`);
@@ -61,8 +63,8 @@ async function loadDashboard() {
     if (order?.status === 'aprovado') { stage = 'Pedido aprovado'; statusClass = 'approved'; target = 'orders.html'; action = 'Gerar PDF'; }
     if (['enviado','recebido'].includes(order?.status)) { stage = order.status === 'recebido' ? 'Pedido recebido' : 'Pedido emitido'; statusClass = 'approved'; target = 'orders.html'; action = 'Ver pedido'; }
     if (order?.status === 'reprovado') { stage = 'Pedido rejeitado'; statusClass = 'cancelled'; target = 'orders.html'; action = 'Revisar pedido'; }
-    return `<tr><td><strong>${dashboardRcCode(request.request_number)}</strong></td><td>${dashboardEscape(dashboardMaterial(request))}</td><td>${quotes.length}</td><td>${lowest === null ? '—' : dashboardMoney(lowest)}</td><td><span class="status ${statusClass}">${stage}</span></td><td>${dashboardDate(request.created_at)}</td><td><a class="row-link" href="${target}">${action} →</a></td></tr>`;
-  }).join('') : '<tr><td colspan="7" class="empty-cell">Nenhuma requisição cadastrada.</td></tr>';
+    return `<tr><td><strong>${dashboardRcCode(request.request_number)}</strong></td><td>${dashboardEscape(dashboardMaterial(request))}</td><td>${dashboardEscape(dashboardMaterialUnit(request))}</td><td>${quotes.length}</td><td>${lowest === null ? '—' : dashboardMoney(lowest)}</td><td><span class="status ${statusClass}">${stage}</span></td><td>${dashboardDate(request.created_at)}</td><td><a class="row-link" href="${target}">${action} →</a></td></tr>`;
+  }).join('') : '<tr><td colspan="8" class="empty-cell">Nenhuma requisição cadastrada.</td></tr>';
 }
 
 dashboardLoginForm.addEventListener('submit', async (event) => {

@@ -3,6 +3,8 @@ const reportForm = document.querySelector('[data-report-filters]');
 const reportNotice = document.querySelector('[data-notice]');
 let reportOrders = [];
 let filteredReportOrders = [];
+let reportInventory = [];
+let filteredReportInventory = [];
 let reportNoticeTimer;
 
 const reportEscape = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
@@ -15,6 +17,7 @@ const reportMaterialCode = (number) => number ? `MAT-${String(number).padStart(4
 const personName = (person) => person?.full_name || person?.email || '—';
 const orderLines = (order) => order.request?.lines || [];
 const orderMaterials = (order) => orderLines(order).map((line) => `${reportMaterialCode(line.item?.material_number)} · ${line.item?.description || 'Material removido'}`).join(', ') || '—';
+const orderUnits = (order) => orderLines(order).map((line) => line.item?.unit_of_measure || '—').join(', ') || '—';
 const orderActivity = (order) => order.request?.activity ? `${order.request.activity.code} · ${order.request.activity.description}` : 'Sem atividade';
 const discountRate = (order) => Number(order.gross_value || 0) > 0 ? (Number(order.discount_value || 0) / Number(order.gross_value)) * 100 : 0;
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -41,9 +44,22 @@ function populateFilters() {
   fillSelect('activity', uniqueOptions(reportOrders.map((order) => order.request?.activity).filter(Boolean), 'id', (activity) => `${activity.code} · ${activity.description}`));
   fillSelect('supplier', uniqueOptions(reportOrders.map((order) => order.supplier).filter(Boolean), 'id', (supplier) => `${supplier.supplier_number ? `FOR-${String(supplier.supplier_number).padStart(4, '0')} · ` : ''}${supplier.legal_name}`));
   fillSelect('business_sector', uniqueOptions(reportOrders.map((order) => order.supplier).filter(Boolean), 'business_sector', 'business_sector'));
-  fillSelect('material', uniqueOptions(reportOrders.flatMap(orderLines).map((line) => line.item).filter(Boolean), 'id', (item) => `${reportMaterialCode(item.material_number)} · ${item.description}`));
+  const materials = [...reportOrders.flatMap(orderLines).map((line) => line.item).filter(Boolean), ...reportInventory.map((item) => ({ id: item.id, material_number: item.material_number, description: item.description }))];
+  fillSelect('material', uniqueOptions(materials, 'id', (item) => `${reportMaterialCode(item.material_number)} · ${item.description}`));
   fillSelect('requester', uniqueOptions(reportOrders.map((order) => order.request?.requester).filter(Boolean), 'id', personName));
   fillSelect('buyer', uniqueOptions(reportOrders.map((order) => order.creator).filter(Boolean), 'id', personName));
+}
+
+function inventoryStatus(item) { const current = Number(item.current_stock); if (current < Number(item.minimum_stock)) return { key: 'below', label: 'Abaixo do mínimo', className: 'rejected' }; if (current > Number(item.maximum_stock)) return { key: 'above', label: 'Acima do máximo', className: 'pending' }; return { key: 'normal', label: 'Dentro da faixa', className: 'approved' }; }
+
+function filterInventory() {
+  const values = new FormData(reportForm); const search = normalize(values.get('search')); const material = values.get('material'); const status = values.get('inventory_status');
+  return reportInventory.filter((item) => {
+    if (search && ![reportMaterialCode(item.material_number), item.description, item.unit_of_measure].some((value) => normalize(value).includes(search))) return false;
+    if (material && item.id !== material) return false;
+    if (status && inventoryStatus(item).key !== status) return false;
+    return true;
+  });
 }
 
 function filterOrders() {
@@ -98,14 +114,22 @@ function renderSummary(entries) {
 
 function detailRows(entries) {
   return entries.map((order) => ({
-    Pedido: reportOrderCode(order.order_number), Data: reportDate(order.created_at), RC: reportRcCode(order.request?.request_number), Atividade: orderActivity(order), Materiais: orderMaterials(order), Fornecedor: order.supplier?.legal_name || '—', Ramo: order.supplier?.business_sector || '—', Solicitante: personName(order.request?.requester), Comprador: personName(order.creator), Bruto: Number(order.gross_value || 0), Desconto: Number(order.discount_value || 0), Líquido: Number(order.total_value || 0), 'Desconto %': discountRate(order), Frete: order.quote?.freight_type || '—', Pagamento: order.payment_terms || order.quote?.payment_terms || '—', Entrega: reportDate(order.expected_delivery_date || order.quote?.delivery_date), Status: String(order.status || '').replaceAll('_', ' '), 'PDF emitido': order.sent_at ? 'Sim' : 'Não'
+    Pedido: reportOrderCode(order.order_number), Data: reportDate(order.created_at), RC: reportRcCode(order.request?.request_number), Atividade: orderActivity(order), Materiais: orderMaterials(order), Unidade: orderUnits(order), Fornecedor: order.supplier?.legal_name || '—', Ramo: order.supplier?.business_sector || '—', Solicitante: personName(order.request?.requester), Comprador: personName(order.creator), Bruto: Number(order.gross_value || 0), Desconto: Number(order.discount_value || 0), Líquido: Number(order.total_value || 0), 'Desconto %': discountRate(order), Frete: order.quote?.freight_type || '—', Pagamento: order.payment_terms || order.quote?.payment_terms || '—', Entrega: reportDate(order.expected_delivery_date || order.quote?.delivery_date), Status: String(order.status || '').replaceAll('_', ' '), 'PDF emitido': order.sent_at ? 'Sim' : 'Não'
   }));
 }
 
 function renderDetails(entries) {
   const body = document.querySelector('[data-report-details]');
   const statusClasses = { em_aprovacao: 'approval', aprovado: 'approved', reprovado: 'rejected', enviado: 'issued', recebido: 'approved', cancelado: 'cancelled', rascunho: 'pending' };
-  body.innerHTML = entries.length ? entries.map((order) => `<tr><td><strong>${reportOrderCode(order.order_number)}</strong></td><td>${reportDate(order.created_at)}</td><td>${reportRcCode(order.request?.request_number)}</td><td>${reportEscape(orderActivity(order))}</td><td>${reportEscape(orderMaterials(order))}</td><td>${reportEscape(order.supplier?.legal_name)}</td><td>${reportEscape(order.supplier?.business_sector)}</td><td>${reportEscape(personName(order.request?.requester))}</td><td>${reportEscape(personName(order.creator))}</td><td>${reportMoney(order.gross_value)}</td><td class="report-saving">${reportMoney(order.discount_value)}</td><td><strong>${reportMoney(order.total_value)}</strong></td><td>${reportEscape(order.quote?.freight_type)}</td><td>${reportEscape(order.payment_terms || order.quote?.payment_terms)}</td><td>${reportDate(order.expected_delivery_date || order.quote?.delivery_date)}</td><td><span class="status ${statusClasses[order.status] || 'pending'}">${reportEscape(String(order.status || '').replaceAll('_', ' '))}</span></td></tr>`).join('') : '<tr><td colspan="16" class="empty-cell">Nenhum pedido corresponde aos filtros selecionados.</td></tr>';
+  body.innerHTML = entries.length ? entries.map((order) => `<tr><td><strong>${reportOrderCode(order.order_number)}</strong></td><td>${reportDate(order.created_at)}</td><td>${reportRcCode(order.request?.request_number)}</td><td>${reportEscape(orderActivity(order))}</td><td>${reportEscape(orderMaterials(order))}</td><td>${reportEscape(orderUnits(order))}</td><td>${reportEscape(order.supplier?.legal_name)}</td><td>${reportEscape(order.supplier?.business_sector)}</td><td>${reportEscape(personName(order.request?.requester))}</td><td>${reportEscape(personName(order.creator))}</td><td>${reportMoney(order.gross_value)}</td><td class="report-saving">${reportMoney(order.discount_value)}</td><td><strong>${reportMoney(order.total_value)}</strong></td><td>${reportEscape(order.quote?.freight_type)}</td><td>${reportEscape(order.payment_terms || order.quote?.payment_terms)}</td><td>${reportDate(order.expected_delivery_date || order.quote?.delivery_date)}</td><td><span class="status ${statusClasses[order.status] || 'pending'}">${reportEscape(String(order.status || '').replaceAll('_', ' '))}</span></td></tr>`).join('') : '<tr><td colspan="17" class="empty-cell">Nenhum pedido corresponde aos filtros selecionados.</td></tr>';
+}
+
+function renderInventory(entries) {
+  document.querySelector('[data-report-stock-count]').textContent = `${entries.length} ${entries.length === 1 ? 'material' : 'materiais'}`;
+  document.querySelector('[data-report-stock-low]').textContent = entries.filter((item) => inventoryStatus(item).key === 'below').length;
+  document.querySelector('[data-report-stock-normal]').textContent = entries.filter((item) => inventoryStatus(item).key === 'normal').length;
+  document.querySelector('[data-report-stock-high]').textContent = entries.filter((item) => inventoryStatus(item).key === 'above').length;
+  document.querySelector('[data-report-stock]').innerHTML = entries.length ? entries.map((item) => { const status = inventoryStatus(item); return `<tr class="stock-row-${status.key}"><td><strong>${reportMaterialCode(item.material_number)}</strong></td><td>${reportEscape(item.description)}</td><td>${reportEscape(item.unit_of_measure)}</td><td><strong>${reportNumber(item.current_stock)}</strong></td><td>${reportNumber(item.minimum_stock)}</td><td>${reportNumber(item.maximum_stock)}</td><td>${reportNumber(item.total_entries)}</td><td>${reportNumber(item.total_exits)}</td><td><span class="status ${status.className}">${status.label}</span></td><td>${reportDate(item.last_movement_date)}</td></tr>`; }).join('') : '<tr><td colspan="10" class="empty-cell">Nenhum material corresponde aos filtros do MRP.</td></tr>';
 }
 
 function renderGroups(entries) {
@@ -118,7 +142,7 @@ function renderGroups(entries) {
   document.querySelector('[data-report-periods]').innerHTML = periods.length ? periods.map((group) => `<tr><td>${group.label}</td><td>${group.orders}</td><td class="report-saving">${reportMoney(group.discount)}</td><td><strong>${reportMoney(group.net)}</strong></td></tr>`).join('') : '<tr><td colspan="4" class="empty-cell">Sem dados.</td></tr>';
 }
 
-function applyFilters() { filteredReportOrders = filterOrders(); renderSummary(filteredReportOrders); renderDetails(filteredReportOrders); renderGroups(filteredReportOrders); }
+function applyFilters() { filteredReportOrders = filterOrders(); filteredReportInventory = filterInventory(); renderSummary(filteredReportOrders); renderInventory(filteredReportInventory); renderDetails(filteredReportOrders); renderGroups(filteredReportOrders); }
 
 function sheetFromRows(rows, widths = []) {
   const sheet = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Informação: 'Nenhum registro corresponde aos filtros.' }]);
@@ -135,14 +159,19 @@ function exportReport() {
   const supplierRows = suppliers.map((group) => ({ Fornecedor: group.label, Pedidos: group.orders, Comprado: group.net, 'Participação %': totalNet ? (group.net / totalNet) * 100 : 0 }));
   const discountRows = suppliers.map((group) => ({ Fornecedor: group.label, Bruto: group.gross, Desconto: group.discount, 'Desconto %': group.gross ? (group.discount / group.gross) * 100 : 0 }));
   const periodRows = periodSummary(filteredReportOrders).map((group) => ({ Período: group.label, Pedidos: group.orders, Bruto: group.gross, Desconto: group.discount, Líquido: group.net }));
-  const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, sheetFromRows(summaryRows, [28, 25]), 'Resumo'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(detailRows(filteredReportOrders), [13, 12, 13, 28, 42, 28, 22, 24, 24, 15, 15, 15, 14, 12, 24, 14, 15, 13]), 'Pedidos'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(activities, [35, 12, 16, 16, 16]), 'Por Atividade'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(supplierRows, [35, 12, 18, 16]), 'Por Fornecedor'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(discountRows, [35, 18, 18, 16]), 'Descontos'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(periodRows, [15, 12, 18, 18, 18]), 'Por Período');
+  const stockRows = filteredReportInventory.map((item) => ({ Código: reportMaterialCode(item.material_number), Material: item.description, Unidade: item.unit_of_measure, 'Estoque atual': Number(item.current_stock), Mínimo: Number(item.minimum_stock), Máximo: Number(item.maximum_stock), Entradas: Number(item.total_entries), Saídas: Number(item.total_exits), Situação: inventoryStatus(item).label, 'Última movimentação': reportDate(item.last_movement_date) }));
+  const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, sheetFromRows(summaryRows, [28, 25]), 'Resumo'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(detailRows(filteredReportOrders), [13, 12, 13, 28, 42, 12, 28, 22, 24, 24, 15, 15, 15, 14, 12, 24, 14, 15, 13]), 'Pedidos'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(stockRows, [14, 38, 12, 16, 14, 14, 14, 14, 22, 20]), 'MRP Estoque'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(activities, [35, 12, 16, 16, 16]), 'Por Atividade'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(supplierRows, [35, 12, 18, 16]), 'Por Fornecedor'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(discountRows, [35, 18, 18, 16]), 'Descontos'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(periodRows, [15, 12, 18, 18, 18]), 'Por Período');
   XLSX.writeFile(workbook, `veltrian-relatorios-${new Date().toISOString().slice(0, 10)}.xlsx`); showReportNotice('Relatório exportado para Excel com sucesso.');
 }
 
 async function loadReportData() {
-  const { data, error } = await reportClient.from('purchase_orders').select('id,order_number,quote_id,purchase_request_id,gross_value,discount_value,total_value,status,payment_terms,expected_delivery_date,selection_reason,sent_at,created_at,supplier:suppliers!purchase_orders_supplier_id_fkey(id,supplier_number,legal_name,business_sector),quote:quotes!purchase_orders_quote_id_fkey(id,freight_type,delivery_date,payment_terms),creator:profiles!purchase_orders_created_by_fkey(id,full_name,email),request:purchase_requests!purchase_orders_purchase_request_id_fkey(id,request_number,priority,status,requester:profiles!purchase_requests_requested_by_fkey(id,full_name,email),activity:activities(id,code,description),lines:purchase_request_items(quantity,item:items(id,material_number,description,manufacturer)))').order('created_at', { ascending: false });
-  if (error) return showReportNotice(`Não foi possível carregar os relatórios: ${error.message}`, 'error');
-  reportOrders = data || []; populateFilters(); applyFilters();
+  const [ordersResult, inventoryResult] = await Promise.all([
+    reportClient.from('purchase_orders').select('id,order_number,quote_id,purchase_request_id,gross_value,discount_value,total_value,status,payment_terms,expected_delivery_date,selection_reason,sent_at,created_at,supplier:suppliers!purchase_orders_supplier_id_fkey(id,supplier_number,legal_name,business_sector),quote:quotes!purchase_orders_quote_id_fkey(id,freight_type,delivery_date,payment_terms),creator:profiles!purchase_orders_created_by_fkey(id,full_name,email),request:purchase_requests!purchase_orders_purchase_request_id_fkey(id,request_number,priority,status,requester:profiles!purchase_requests_requested_by_fkey(id,full_name,email),activity:activities(id,code,description),lines:purchase_request_items(quantity,item:items(id,material_number,description,manufacturer,unit_of_measure)))').order('created_at', { ascending: false }),
+    reportClient.from('mrp_stock_summary').select('*').eq('controls_stock', true).eq('active', true).order('description')
+  ]);
+  if (ordersResult.error) return showReportNotice(`Não foi possível carregar os relatórios: ${ordersResult.error.message}`, 'error');
+  if (inventoryResult.error) return showReportNotice(`Não foi possível carregar o relatório MRP: ${inventoryResult.error.message}`, 'error');
+  reportOrders = ordersResult.data || []; reportInventory = inventoryResult.data || []; populateFilters(); applyFilters();
 }
 
 reportForm.addEventListener('input', applyFilters); reportForm.addEventListener('change', applyFilters); reportForm.addEventListener('reset', () => setTimeout(applyFilters)); document.querySelector('[data-export-report]').addEventListener('click', exportReport);

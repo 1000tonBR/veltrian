@@ -3,6 +3,7 @@ const managementForm = document.querySelector('[data-dashboard-filters]');
 const managementNotice = document.querySelector('[data-notice]');
 let managementOrders = [];
 let managementDeliveries = [];
+let managementInventory = [];
 let managementCharts = [];
 let managementLoaded = false;
 let managementNoticeTimer;
@@ -13,6 +14,9 @@ const managementCompactMoney = (value) => new Intl.NumberFormat('pt-BR', { style
 const managementNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const managementDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '—';
 const managementActivity = (order) => order.request?.activity ? `${order.request.activity.code} · ${order.request.activity.description}` : 'Sem atividade';
+const managementNormalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+const managementMaterialCode = (number) => number ? `MAT-${String(number).padStart(4, '0')}` : '—';
+const managementOrderLines = (order) => order.request?.lines || [];
 const chartColors = ['#14a6a1', '#346fe3', '#22b573', '#f29a38', '#8a5ed1', '#e0526f', '#40a6d9'];
 
 if (window.Chart) {
@@ -38,9 +42,16 @@ function populateActivityFilter() {
 }
 
 function filteredManagementOrders() {
-  const values = new FormData(managementForm); const start = values.get('date_start'); const end = values.get('date_end'); const activity = values.get('activity');
-  return managementOrders.filter((order) => { const date = String(order.created_at || '').slice(0,10); if (start && date < start) return false; if (end && date > end) return false; if (activity && order.request?.activity?.id !== activity) return false; return true; });
+  const values = new FormData(managementForm); const start = values.get('date_start'); const end = values.get('date_end'); const activity = values.get('activity'); const materialField = values.get('material_field') || 'all'; const materialTerm = managementNormalize(values.get('material_search'));
+  return managementOrders.filter((order) => { const date = String(order.created_at || '').slice(0,10); if (start && date < start) return false; if (end && date > end) return false; if (activity && order.request?.activity?.id !== activity) return false; if (materialTerm && !managementOrderLines(order).some((line) => { const item = line.item || {}; const fields = { code: [managementMaterialCode(item.material_number), item.material_number], description: [item.description], all: [managementMaterialCode(item.material_number), item.material_number, item.description] }; return (fields[materialField] || fields.all).some((value) => managementNormalize(value).includes(materialTerm)); })) return false; return true; });
 }
+
+function filteredManagementInventory() {
+  const values = new FormData(managementForm); const field = values.get('material_field') || 'all'; const term = managementNormalize(values.get('material_search'));
+  return managementInventory.filter((item) => { const fields = { code: [managementMaterialCode(item.material_number), item.material_number], description: [item.description], all: [managementMaterialCode(item.material_number), item.material_number, item.description] }; return !term || (fields[field] || fields.all).some((value) => managementNormalize(value).includes(term)); });
+}
+
+function managementStockStatus(item) { const current = Number(item.current_stock); if (current < Number(item.minimum_stock)) return 'below'; if (current > Number(item.maximum_stock)) return 'above'; return 'normal'; }
 
 function matchingDeliveries(entries) {
   const ids = new Set(entries.map((order) => order.id));
@@ -50,6 +61,12 @@ function matchingDeliveries(entries) {
 function renderManagementKpis(entries) {
   const gross = entries.reduce((sum, order) => sum + Number(order.gross_value || 0), 0); const saving = entries.reduce((sum, order) => sum + Number(order.discount_value || 0), 0); const net = entries.reduce((sum, order) => sum + Number(order.total_value || 0), 0); const suppliers = new Set(entries.map((order) => order.supplier?.id).filter(Boolean)); const deliveries = matchingDeliveries(entries); const received = deliveries.filter((delivery) => delivery.status === 'recebido').length; const rate = deliveries.length ? received / deliveries.length * 100 : 0;
   document.querySelector('[data-dashboard-net]').textContent = managementMoney(net); document.querySelector('[data-dashboard-orders]').textContent = `${entries.length} ${entries.length === 1 ? 'pedido' : 'pedidos'}`; document.querySelector('[data-dashboard-saving]').textContent = managementMoney(saving); document.querySelector('[data-dashboard-saving-rate]').textContent = `${managementNumber(gross ? saving / gross * 100 : 0)}% do bruto`; document.querySelector('[data-dashboard-ticket]').textContent = managementMoney(entries.length ? net / entries.length : 0); document.querySelector('[data-dashboard-suppliers]').textContent = suppliers.size; document.querySelector('[data-dashboard-received-rate]').textContent = `${managementNumber(rate)}%`; document.querySelector('[data-dashboard-email-summary]').textContent = `${received} de ${deliveries.length} enviados`;
+}
+
+function renderStockKpis(entries) {
+  document.querySelector('[data-dashboard-stock-controlled]').textContent = entries.length;
+  document.querySelector('[data-dashboard-stock-low]').textContent = entries.filter((item) => managementStockStatus(item) === 'below').length;
+  document.querySelector('[data-dashboard-stock-high]').textContent = entries.filter((item) => managementStockStatus(item) === 'above').length;
 }
 
 function destroyCharts() { managementCharts.forEach((chart) => chart.destroy()); managementCharts = []; }
@@ -84,6 +101,12 @@ function renderActivityChart(entries) {
   managementCharts.push(new Chart(canvas, { type: 'bar', data: { labels: groups.map((group) => group.label), datasets: [{ label: 'Saving', data: groups.map((group) => group.saving), backgroundColor: '#20b978', borderRadius: 7, barThickness: 20 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, border: { display: false }, grid: { color: '#eef2f2' }, ticks: { callback: managementCompactMoney } }, y: { border: { display: false }, grid: { display: false } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: currencyTooltip } } } } }));
 }
 
+function renderStockChart(entries) {
+  const canvas = document.querySelector('[data-stock-chart]'); const items = [...entries].sort((a, b) => Number(a.current_stock) - Number(a.minimum_stock) - (Number(b.current_stock) - Number(b.minimum_stock))).slice(0, 12);
+  if (!chartOrMessage(canvas, items.length, 'Cadastre materiais com controle de estoque para visualizar o MRP.')) return;
+  managementCharts.push(new Chart(canvas, { type: 'bar', data: { labels: items.map((item) => `${managementMaterialCode(item.material_number)} · ${item.description}`), datasets: [{ label: 'Estoque atual', data: items.map((item) => Number(item.current_stock)), backgroundColor: items.map((item) => managementStockStatus(item) === 'below' ? '#df5a5a' : managementStockStatus(item) === 'above' ? '#e6a23c' : '#20b978'), borderRadius: 6 }, { label: 'Mínimo', data: items.map((item) => Number(item.minimum_stock)), backgroundColor: '#6f8da8', borderRadius: 6 }, { label: 'Máximo', data: items.map((item) => Number(item.maximum_stock)), backgroundColor: '#3c74d9', borderRadius: 6 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, border: { display: false }, grid: { color: '#eef2f2' } }, y: { border: { display: false }, grid: { display: false } } }, plugins: { legend: { position: 'top', align: 'end' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${managementNumber(context.raw)} ${items[context.dataIndex]?.unit_of_measure || ''}` } } } } }));
+}
+
 function renderEmailTracking(entries) {
   const deliveries = matchingDeliveries(entries).sort((a,b) => new Date(b.sent_at) - new Date(a.sent_at)); const received = deliveries.filter((delivery) => delivery.status === 'recebido').length; const rate = deliveries.length ? received / deliveries.length * 100 : 0;
   document.querySelector('[data-email-received]').textContent = received; document.querySelector('[data-email-sent]').textContent = deliveries.length; document.querySelector('[data-email-progress-bar]').style.width = `${rate}%`;
@@ -91,20 +114,23 @@ function renderEmailTracking(entries) {
   target.innerHTML = deliveries.length ? deliveries.slice(0,6).map((delivery) => { const order = ordersById.get(delivery.purchase_order_id); const isReceived = delivery.status === 'recebido'; return `<div class="delivery-item ${isReceived ? 'received' : ''}"><i></i><div><strong>PC-${String(order?.order_number || '').padStart(4,'0')} · ${managementEscape(order?.supplier?.legal_name)}</strong><span>${managementEscape(delivery.recipient_email)}</span></div><div><b>${isReceived ? 'Recebido' : 'Enviado'}</b><time>${managementDate(isReceived ? delivery.received_at : delivery.sent_at)}</time></div></div>`; }).join('') : '<p class="chart-empty">Nenhum pedido foi enviado por e-mail ainda.</p>';
 }
 
-function renderManagementDashboard() { const entries = filteredManagementOrders(); destroyCharts(); renderManagementKpis(entries); renderMonthlyChart(entries); renderStatusChart(entries); renderSupplierChart(entries); renderActivityChart(entries); renderEmailTracking(entries); }
+function renderManagementDashboard() { const entries = filteredManagementOrders(); const inventory = filteredManagementInventory(); destroyCharts(); renderManagementKpis(entries); renderStockKpis(inventory); renderMonthlyChart(entries); renderStatusChart(entries); renderSupplierChart(entries); renderActivityChart(entries); renderStockChart(inventory); renderEmailTracking(entries); }
 
 async function loadManagementData() {
   if (managementLoaded) return;
   managementLoaded = true;
-  const [ordersResult, deliveriesResult] = await Promise.all([
-    managementClient.from('purchase_orders').select('id,order_number,gross_value,discount_value,total_value,status,created_at,supplier:suppliers!purchase_orders_supplier_id_fkey(id,legal_name),request:purchase_requests!purchase_orders_purchase_request_id_fkey(id,activity:activities(id,code,description))').in('status', ['aprovado','enviado','recebido']).order('created_at'),
-    managementClient.from('order_email_deliveries').select('purchase_order_id,recipient_email,status,sent_at,received_at').order('sent_at', { ascending: false })
+  const [ordersResult, deliveriesResult, inventoryResult] = await Promise.all([
+    managementClient.from('purchase_orders').select('id,order_number,gross_value,discount_value,total_value,status,created_at,supplier:suppliers!purchase_orders_supplier_id_fkey(id,legal_name),request:purchase_requests!purchase_orders_purchase_request_id_fkey(id,activity:activities(id,code,description),lines:purchase_request_items(item:items(id,material_number,description,unit_of_measure)))').in('status', ['aprovado','enviado','recebido']).order('created_at'),
+    managementClient.from('order_email_deliveries').select('purchase_order_id,recipient_email,status,sent_at,received_at').order('sent_at', { ascending: false }),
+    managementClient.from('mrp_stock_summary').select('*').eq('controls_stock', true).eq('active', true).order('description')
   ]);
   if (ordersResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar o Dashboard: ${ordersResult.error.message}`); }
   if (deliveriesResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar os envios: ${deliveriesResult.error.message}`); }
-  managementOrders = ordersResult.data || []; managementDeliveries = deliveriesResult.data || []; populateActivityFilter(); renderManagementDashboard();
+  if (inventoryResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar o MRP: ${inventoryResult.error.message}`); }
+  managementOrders = ordersResult.data || []; managementDeliveries = deliveriesResult.data || []; managementInventory = inventoryResult.data || []; populateActivityFilter(); renderManagementDashboard();
 }
 
+managementForm.elements.material_field.addEventListener('change', () => { const placeholders = { all: 'Digite código ou descrição', code: 'Digite o código do material', description: 'Digite a descrição do material' }; managementForm.elements.material_search.placeholder = placeholders[managementForm.elements.material_field.value] || placeholders.all; });
 managementForm.addEventListener('input', renderManagementDashboard); managementForm.addEventListener('change', renderManagementDashboard); managementForm.addEventListener('reset', () => setTimeout(renderManagementDashboard));
 managementClient.auth.getSession().then(({ data: { session } }) => { if (session) loadManagementData(); });
 managementClient.auth.onAuthStateChange((_event, session) => { if (session) setTimeout(loadManagementData); });

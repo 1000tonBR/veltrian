@@ -21,6 +21,7 @@ const quoteDate = (value, includeTime = true) => value ? new Intl.DateTimeFormat
 const quoteRcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
 const quoteMaterial = (request) => request?.lines?.map((line) => line.item?.description).filter(Boolean).join(', ') || '—';
 const quoteMaterialCode = (request) => request?.lines?.map((line) => line.item?.material_number ? `MAT-${String(line.item.material_number).padStart(4, '0')}` : '—').join(', ') || '—';
+const quoteMaterialUnit = (request) => request?.lines?.map((line) => line.item?.unit_of_measure || '—').join(', ') || '—';
 const quoteActivity = (request) => request?.activity ? `${request.activity.code} · ${request.activity.description}` : '—';
 const quoteRequester = (request) => request?.requester?.full_name || request?.requester?.email || 'Solicitante não identificado';
 const normalizeQuoteSearch = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
@@ -77,7 +78,7 @@ function updateNetValues() {
 
 function updateRequestSummary() {
   const request = quoteRequests.find((entry) => entry.id === requestSelect.value);
-  document.querySelector('[data-request-summary]').innerHTML = request ? `<strong>${quoteRcCode(request.request_number)}</strong><span>${quoteMaterialCode(request)} · ${escapeQuote(quoteMaterial(request))}</span><span>Solicitante: ${escapeQuote(quoteRequester(request))} · Cadastro: ${quoteDate(request.created_at, false)}</span><span>Atividade: ${escapeQuote(quoteActivity(request))}</span>` : 'Selecione uma requisição para ver o material e a atividade.';
+  document.querySelector('[data-request-summary]').innerHTML = request ? `<strong>${quoteRcCode(request.request_number)}</strong><span>${quoteMaterialCode(request)} · ${escapeQuote(quoteMaterial(request))} · Unidade: ${escapeQuote(quoteMaterialUnit(request))}</span><span>Solicitante: ${escapeQuote(quoteRequester(request))} · Cadastro: ${quoteDate(request.created_at, false)}</span><span>Atividade: ${escapeQuote(quoteActivity(request))}</span>` : 'Selecione uma requisição para ver o material e a atividade.';
 }
 
 function availableQuoteRequests(selectedRequestId = '') {
@@ -135,13 +136,13 @@ function renderQuotes(entries = quotes) {
     if (quote.selected && order?.status === 'reprovado') result = '<span class="status rejected">Pedido rejeitado</span>';
     if (quote.selected && !order) result = '<span class="status approval">Escolhida no pedido</span>';
     const actions = locked ? '—' : `<button type="button" class="row-button" data-edit-quote="${quote.purchase_request_id}">Editar</button><button type="button" class="row-button danger" data-delete-quote="${quote.purchase_request_id}">Excluir</button>`;
-    return `<tr class="${lowest ? 'winner-row' : ''}"><td>${quoteRcCode(request?.request_number || '')}</td><td>${escapeQuote(quoteMaterialCode(request))}</td><td>${escapeQuote(quoteMaterial(request))}</td><td>${escapeQuote(quote.supplier?.legal_name)}</td><td>${quoteMoney(quote.quoted_value)}</td><td>${quoteMoney(quote.discount_value)}</td><td><strong>${quoteMoney(quote.net_value)}</strong></td><td>${quoteDate(quote.delivery_date, false)}</td><td>${escapeQuote(quote.freight_type)}</td><td>${escapeQuote(quote.payment_terms)}</td><td>${result}</td><td>${quoteDate(quote.created_at)}</td><td class="table-actions">${actions}</td></tr>`;
-  }).join('') : '<tr><td colspan="13" class="empty-cell">Nenhuma cotação cadastrada.</td></tr>';
+    return `<tr class="${lowest ? 'winner-row' : ''}"><td>${quoteRcCode(request?.request_number || '')}</td><td>${escapeQuote(quoteMaterialCode(request))}</td><td>${escapeQuote(quoteMaterial(request))}</td><td>${escapeQuote(quoteMaterialUnit(request))}</td><td>${escapeQuote(quote.supplier?.legal_name)}</td><td>${quoteMoney(quote.quoted_value)}</td><td>${quoteMoney(quote.discount_value)}</td><td><strong>${quoteMoney(quote.net_value)}</strong></td><td>${quoteDate(quote.delivery_date, false)}</td><td>${escapeQuote(quote.freight_type)}</td><td>${escapeQuote(quote.payment_terms)}</td><td>${result}</td><td>${quoteDate(quote.created_at)}</td><td class="table-actions">${actions}</td></tr>`;
+  }).join('') : '<tr><td colspan="14" class="empty-cell">Nenhuma cotação cadastrada.</td></tr>';
 }
 
 async function loadQuoteReferences() {
   const [requestsResult, suppliersResult] = await Promise.all([
-    quoteClient.from('purchase_requests').select('id,request_number,created_at,requester:profiles!purchase_requests_requested_by_fkey(full_name,email),activity:activities(code,description),lines:purchase_request_items(quantity,item:items(description,material_number))').order('request_number', { ascending: false }),
+    quoteClient.from('purchase_requests').select('id,request_number,created_at,requester:profiles!purchase_requests_requested_by_fkey(full_name,email),activity:activities(code,description),lines:purchase_request_items(quantity,item:items(description,material_number,unit_of_measure))').order('request_number', { ascending: false }),
     quoteClient.from('suppliers').select('id,supplier_number,legal_name,payment_terms,active').eq('active', true).order('legal_name')
   ]);
   if (requestsResult.error) showQuoteNotice(`Não foi possível carregar as requisições: ${requestsResult.error.message}`, 'error');
@@ -150,7 +151,7 @@ async function loadQuoteReferences() {
 }
 
 async function loadQuotes() {
-  const { data, error } = await quoteClient.from('quotes').select('*,supplier:suppliers(id,legal_name,supplier_number),request:purchase_requests(id,request_number,activity:activities(code,description),lines:purchase_request_items(quantity,item:items(description,material_number)),orders:purchase_orders!purchase_orders_purchase_request_id_fkey(order_number,status,created_at))').order('created_at', { ascending: false });
+  const { data, error } = await quoteClient.from('quotes').select('*,supplier:suppliers(id,legal_name,supplier_number),request:purchase_requests(id,request_number,activity:activities(code,description),lines:purchase_request_items(quantity,item:items(description,material_number,unit_of_measure)),orders:purchase_orders!purchase_orders_purchase_request_id_fkey(order_number,status,created_at))').order('created_at', { ascending: false });
   if (error) return showQuoteNotice(`Não foi possível carregar as cotações: ${error.message}`, 'error'); quotes = data || []; renderQuotes();
 }
 
