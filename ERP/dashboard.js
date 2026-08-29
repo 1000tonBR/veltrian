@@ -1,9 +1,14 @@
 const managementClient = window.erpSupabase;
 const managementForm = document.querySelector('[data-dashboard-filters]');
 const managementNotice = document.querySelector('[data-notice]');
+const managementMaterialOptions = document.querySelector('[data-dashboard-material-options]');
+const managementMaterialSelection = document.querySelector('[data-dashboard-material-selection]');
+const managementMaterialResultCount = document.querySelector('[data-dashboard-material-result-count]');
 let managementOrders = [];
 let managementDeliveries = [];
 let managementInventory = [];
+let managementMaterials = [];
+let managementSelectedMaterials = new Set();
 let managementCharts = [];
 let managementLoaded = false;
 let managementNoticeTimer;
@@ -41,14 +46,35 @@ function populateActivityFilter() {
   managementForm.elements.activity.innerHTML = `<option value="">Todas as atividades</option>${[...activities].sort((a,b) => a[1].localeCompare(b[1], 'pt-BR')).map(([id,label]) => `<option value="${id}">${managementEscape(label)}</option>`).join('')}`;
 }
 
+function managementMaterialFields(material) {
+  const code = managementMaterialCode(material.material_number);
+  return { code: [code, code.replace(/-/g, ''), material.material_number], description: [material.description], all: [code, code.replace(/-/g, ''), material.material_number, material.description] };
+}
+
+function renderSelectedMaterials() {
+  const selected = managementMaterials.filter((material) => managementSelectedMaterials.has(String(material.id)));
+  managementMaterialSelection.innerHTML = selected.length
+    ? selected.map((material) => `<button type="button" data-remove-dashboard-material="${managementEscape(material.id)}" title="Remover ${managementEscape(material.description)}"><strong>${managementMaterialCode(material.material_number)}</strong><span>${managementEscape(material.description)}</span><b aria-hidden="true">×</b></button>`).join('')
+    : '<span>Nenhum material selecionado — todos serão considerados.</span>';
+}
+
+function renderMaterialFilterOptions() {
+  const field = managementForm.elements.material_field.value || 'all'; const term = managementNormalize(managementForm.elements.material_search.value);
+  const filtered = term ? managementMaterials.filter((material) => (managementMaterialFields(material)[field] || managementMaterialFields(material).all).some((value) => managementNormalize(value).includes(term))) : managementMaterials;
+  const visible = filtered.slice(0, 30);
+  managementMaterialOptions.innerHTML = visible.length ? visible.map((material) => { const id = String(material.id); const selected = managementSelectedMaterials.has(id); return `<label class="dashboard-material-option${selected ? ' is-selected' : ''}"><input type="checkbox" value="${managementEscape(id)}" data-dashboard-material-option${selected ? ' checked' : ''}><span><strong>${managementMaterialCode(material.material_number)}</strong><span>${managementEscape(material.description)}</span></span><small>${managementEscape(material.unit_of_measure)}</small></label>`; }).join('') : '<p>Nenhum material encontrado.</p>';
+  const shownText = filtered.length > visible.length ? `Mostrando ${visible.length} de ${filtered.length} materiais` : `${filtered.length} ${filtered.length === 1 ? 'material encontrado' : 'materiais encontrados'}`;
+  managementMaterialResultCount.textContent = `${shownText} · ${managementSelectedMaterials.size} ${managementSelectedMaterials.size === 1 ? 'selecionado' : 'selecionados'}`;
+  managementMaterialResultCount.dataset.empty = String(filtered.length === 0);
+}
+
 function filteredManagementOrders() {
-  const values = new FormData(managementForm); const start = values.get('date_start'); const end = values.get('date_end'); const activity = values.get('activity'); const materialField = values.get('material_field') || 'all'; const materialTerm = managementNormalize(values.get('material_search'));
-  return managementOrders.filter((order) => { const date = String(order.created_at || '').slice(0,10); if (start && date < start) return false; if (end && date > end) return false; if (activity && order.request?.activity?.id !== activity) return false; if (materialTerm && !managementOrderLines(order).some((line) => { const item = line.item || {}; const fields = { code: [managementMaterialCode(item.material_number), item.material_number], description: [item.description], all: [managementMaterialCode(item.material_number), item.material_number, item.description] }; return (fields[materialField] || fields.all).some((value) => managementNormalize(value).includes(materialTerm)); })) return false; return true; });
+  const values = new FormData(managementForm); const start = values.get('date_start'); const end = values.get('date_end'); const activity = values.get('activity');
+  return managementOrders.filter((order) => { const date = String(order.created_at || '').slice(0,10); if (start && date < start) return false; if (end && date > end) return false; if (activity && order.request?.activity?.id !== activity) return false; if (managementSelectedMaterials.size && !managementOrderLines(order).some((line) => managementSelectedMaterials.has(String(line.item?.id)))) return false; return true; });
 }
 
 function filteredManagementInventory() {
-  const values = new FormData(managementForm); const field = values.get('material_field') || 'all'; const term = managementNormalize(values.get('material_search'));
-  return managementInventory.filter((item) => { const fields = { code: [managementMaterialCode(item.material_number), item.material_number], description: [item.description], all: [managementMaterialCode(item.material_number), item.material_number, item.description] }; return !term || (fields[field] || fields.all).some((value) => managementNormalize(value).includes(term)); });
+  return managementSelectedMaterials.size ? managementInventory.filter((item) => managementSelectedMaterials.has(String(item.id))) : managementInventory;
 }
 
 function managementStockStatus(item) { const current = Number(item.current_stock); if (current < Number(item.minimum_stock)) return 'below'; if (current > Number(item.maximum_stock)) return 'above'; return 'normal'; }
@@ -119,18 +145,24 @@ function renderManagementDashboard() { const entries = filteredManagementOrders(
 async function loadManagementData() {
   if (managementLoaded) return;
   managementLoaded = true;
-  const [ordersResult, deliveriesResult, inventoryResult] = await Promise.all([
+  const [ordersResult, deliveriesResult, inventoryResult, materialsResult] = await Promise.all([
     managementClient.from('purchase_orders').select('id,order_number,gross_value,discount_value,total_value,status,created_at,supplier:suppliers!purchase_orders_supplier_id_fkey(id,legal_name),request:purchase_requests!purchase_orders_purchase_request_id_fkey(id,activity:activities(id,code,description),lines:purchase_request_items(item:items(id,material_number,description,unit_of_measure)))').in('status', ['aprovado','enviado','recebido']).order('created_at'),
     managementClient.from('order_email_deliveries').select('purchase_order_id,recipient_email,status,sent_at,received_at').order('sent_at', { ascending: false }),
-    managementClient.from('mrp_stock_summary').select('*').eq('controls_stock', true).eq('active', true).order('description')
+    managementClient.from('mrp_stock_summary').select('*').eq('controls_stock', true).eq('active', true).order('description'),
+    managementClient.from('items').select('id,material_number,description,unit_of_measure').eq('active', true).order('description')
   ]);
   if (ordersResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar o Dashboard: ${ordersResult.error.message}`); }
   if (deliveriesResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar os envios: ${deliveriesResult.error.message}`); }
   if (inventoryResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar o MRP: ${inventoryResult.error.message}`); }
-  managementOrders = ordersResult.data || []; managementDeliveries = deliveriesResult.data || []; managementInventory = inventoryResult.data || []; populateActivityFilter(); renderManagementDashboard();
+  if (materialsResult.error) { managementLoaded = false; return showManagementNotice(`Não foi possível carregar os materiais: ${materialsResult.error.message}`); }
+  managementOrders = ordersResult.data || []; managementDeliveries = deliveriesResult.data || []; managementInventory = inventoryResult.data || []; managementMaterials = materialsResult.data || []; populateActivityFilter(); renderSelectedMaterials(); renderMaterialFilterOptions(); renderManagementDashboard();
 }
 
-managementForm.elements.material_field.addEventListener('change', () => { const placeholders = { all: 'Digite código ou descrição', code: 'Digite o código do material', description: 'Digite a descrição do material' }; managementForm.elements.material_search.placeholder = placeholders[managementForm.elements.material_field.value] || placeholders.all; });
-managementForm.addEventListener('input', renderManagementDashboard); managementForm.addEventListener('change', renderManagementDashboard); managementForm.addEventListener('reset', () => setTimeout(renderManagementDashboard));
+managementForm.elements.material_field.addEventListener('change', () => { const placeholders = { all: 'Digite para localizar um material', code: 'Digite o código do material', description: 'Digite a descrição do material' }; managementForm.elements.material_search.placeholder = placeholders[managementForm.elements.material_field.value] || placeholders.all; renderMaterialFilterOptions(); });
+managementForm.elements.material_search.addEventListener('input', renderMaterialFilterOptions);
+managementMaterialOptions.addEventListener('change', (event) => { const option = event.target.closest('[data-dashboard-material-option]'); if (!option) return; if (option.checked) managementSelectedMaterials.add(option.value); else managementSelectedMaterials.delete(option.value); renderSelectedMaterials(); renderMaterialFilterOptions(); renderManagementDashboard(); });
+managementMaterialSelection.addEventListener('click', (event) => { const button = event.target.closest('[data-remove-dashboard-material]'); if (!button) return; managementSelectedMaterials.delete(button.dataset.removeDashboardMaterial); renderSelectedMaterials(); renderMaterialFilterOptions(); renderManagementDashboard(); });
+managementForm.elements.date_start.addEventListener('input', renderManagementDashboard); managementForm.elements.date_end.addEventListener('input', renderManagementDashboard); managementForm.elements.activity.addEventListener('change', renderManagementDashboard);
+managementForm.addEventListener('reset', () => setTimeout(() => { managementSelectedMaterials.clear(); renderSelectedMaterials(); renderMaterialFilterOptions(); renderManagementDashboard(); }));
 managementClient.auth.getSession().then(({ data: { session } }) => { if (session) loadManagementData(); });
 managementClient.auth.onAuthStateChange((_event, session) => { if (session) setTimeout(loadManagementData); });
