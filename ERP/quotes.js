@@ -17,10 +17,12 @@ let quoteNoticeTimer;
 
 const escapeQuote = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 const quoteMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const quoteNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 const quoteDate = (value, includeTime = true) => value ? new Intl.DateTimeFormat('pt-BR', includeTime ? { dateStyle: 'short', timeStyle: 'short' } : { dateStyle: 'short' }).format(new Date(`${value}${String(value).includes('T') ? '' : 'T12:00:00'}`)) : '—';
 const quoteRcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
 const quoteMaterial = (request) => request?.lines?.map((line) => line.item?.description).filter(Boolean).join(', ') || '—';
 const quoteMaterialCode = (request) => request?.lines?.map((line) => line.item?.material_number ? `MAT-${String(line.item.material_number).padStart(4, '0')}` : '—').join(', ') || '—';
+const quoteQuantity = (request) => request?.lines?.map((line) => quoteNumber(line.quantity)).join(', ') || '—';
 const quoteMaterialUnit = (request) => request?.lines?.map((line) => line.item?.unit_of_measure || '—').join(', ') || '—';
 const quoteActivity = (request) => request?.activity ? `${request.activity.code} · ${request.activity.description}` : '—';
 const quoteRequester = (request) => request?.requester?.full_name || request?.requester?.email || 'Solicitante não identificado';
@@ -78,7 +80,7 @@ function updateNetValues() {
 
 function updateRequestSummary() {
   const request = quoteRequests.find((entry) => entry.id === requestSelect.value);
-  document.querySelector('[data-request-summary]').innerHTML = request ? `<strong>${quoteRcCode(request.request_number)}</strong><span>${quoteMaterialCode(request)} · ${escapeQuote(quoteMaterial(request))} · Unidade: ${escapeQuote(quoteMaterialUnit(request))}</span><span>Solicitante: ${escapeQuote(quoteRequester(request))} · Cadastro: ${quoteDate(request.created_at, false)}</span><span>Atividade: ${escapeQuote(quoteActivity(request))}</span>` : 'Selecione uma requisição para ver o material e a atividade.';
+  document.querySelector('[data-request-summary]').innerHTML = request ? `<strong>${quoteRcCode(request.request_number)}</strong><span>${quoteMaterialCode(request)} · ${escapeQuote(quoteMaterial(request))} · Quantidade: ${escapeQuote(quoteQuantity(request))} · Unidade: ${escapeQuote(quoteMaterialUnit(request))}</span><span>Solicitante: ${escapeQuote(quoteRequester(request))} · Cadastro: ${quoteDate(request.created_at, false)}</span><span>Atividade: ${escapeQuote(quoteActivity(request))}</span>` : 'Selecione uma requisição para ver o material e a atividade.';
 }
 
 function availableQuoteRequests(selectedRequestId = '') {

@@ -10,6 +10,7 @@ let reportNoticeTimer;
 const reportEscape = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 const reportMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const reportNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const reportQuantityNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 const reportDate = (value) => value ? new Intl.DateTimeFormat('pt-BR').format(new Date(`${String(value).slice(0, 10)}T12:00:00`)) : '—';
 const reportOrderCode = (number) => number ? `PC-${String(number).padStart(4, '0')}` : '—';
 const reportRcCode = (number) => number ? `RC-${String(number).padStart(4, '0')}` : '—';
@@ -17,6 +18,8 @@ const reportMaterialCode = (number) => number ? `MAT-${String(number).padStart(4
 const personName = (person) => person?.full_name || person?.email || '—';
 const orderLines = (order) => order.request?.lines || [];
 const orderMaterials = (order) => orderLines(order).map((line) => `${reportMaterialCode(line.item?.material_number)} · ${line.item?.description || 'Material removido'}`).join(', ') || '—';
+const orderQuantities = (order) => orderLines(order).filter((line) => line.quantity !== null && line.quantity !== undefined && line.quantity !== '').map((line) => Number(line.quantity)).filter(Number.isFinite);
+const orderQuantityLabel = (order) => orderQuantities(order).map(reportQuantityNumber).join(', ') || '—';
 const orderUnits = (order) => orderLines(order).map((line) => line.item?.unit_of_measure || '—').join(', ') || '—';
 const orderActivity = (order) => order.request?.activity ? `${order.request.activity.code} · ${order.request.activity.description}` : 'Sem atividade';
 const discountRate = (order) => Number(order.gross_value || 0) > 0 ? (Number(order.discount_value || 0) / Number(order.gross_value)) * 100 : 0;
@@ -66,11 +69,12 @@ function filterOrders() {
   const values = new FormData(reportForm);
   const search = normalize(values.get('search'));
   const dateStart = values.get('date_start'); const dateEnd = values.get('date_end'); const deliveryEnd = values.get('delivery_end');
+  const quantityMin = values.get('quantity_min') === '' ? null : Number(values.get('quantity_min')); const quantityMax = values.get('quantity_max') === '' ? null : Number(values.get('quantity_max'));
   const netMin = values.get('net_min') === '' ? null : Number(values.get('net_min')); const netMax = values.get('net_max') === '' ? null : Number(values.get('net_max'));
   const discountMin = values.get('discount_min') === '' ? null : Number(values.get('discount_min')); const discountPercentMin = values.get('discount_percent_min') === '' ? null : Number(values.get('discount_percent_min'));
   return reportOrders.filter((order) => {
     const created = String(order.created_at || '').slice(0, 10); const delivery = String(order.expected_delivery_date || order.quote?.delivery_date || '').slice(0, 10);
-    const searchValues = [reportOrderCode(order.order_number), reportRcCode(order.request?.request_number), orderActivity(order), orderMaterials(order), order.supplier?.legal_name, order.supplier?.business_sector, personName(order.request?.requester), personName(order.creator), order.payment_terms, order.quote?.freight_type, order.status];
+    const searchValues = [reportOrderCode(order.order_number), reportRcCode(order.request?.request_number), orderActivity(order), orderMaterials(order), orderQuantityLabel(order), order.supplier?.legal_name, order.supplier?.business_sector, personName(order.request?.requester), personName(order.creator), order.payment_terms, order.quote?.freight_type, order.status];
     if (search && !searchValues.some((value) => normalize(value).includes(search))) return false;
     if (dateStart && created < dateStart) return false; if (dateEnd && created > dateEnd) return false; if (deliveryEnd && (!delivery || delivery > deliveryEnd)) return false;
     if (values.get('activity') && order.request?.activity?.id !== values.get('activity')) return false;
@@ -85,6 +89,7 @@ function filterOrders() {
     if (values.get('freight') && values.get('freight') !== 'sem_frete' && order.quote?.freight_type !== values.get('freight')) return false;
     if (values.get('pdf_status') === 'sent' && !order.sent_at) return false; if (values.get('pdf_status') === 'pending' && order.sent_at) return false;
     if (values.get('payment_terms') && !normalize(order.payment_terms || order.quote?.payment_terms).includes(normalize(values.get('payment_terms')))) return false;
+    if ((quantityMin !== null || quantityMax !== null) && !orderQuantities(order).some((quantity) => (quantityMin === null || quantity >= quantityMin) && (quantityMax === null || quantity <= quantityMax))) return false;
     if (netMin !== null && Number(order.total_value) < netMin) return false; if (netMax !== null && Number(order.total_value) > netMax) return false;
     if (discountMin !== null && Number(order.discount_value || 0) < discountMin) return false; if (discountPercentMin !== null && discountRate(order) < discountPercentMin) return false;
     return true;
@@ -114,14 +119,14 @@ function renderSummary(entries) {
 
 function detailRows(entries) {
   return entries.map((order) => ({
-    Pedido: reportOrderCode(order.order_number), Data: reportDate(order.created_at), RC: reportRcCode(order.request?.request_number), Atividade: orderActivity(order), Materiais: orderMaterials(order), Unidade: orderUnits(order), Fornecedor: order.supplier?.legal_name || '—', Ramo: order.supplier?.business_sector || '—', Solicitante: personName(order.request?.requester), Comprador: personName(order.creator), Bruto: Number(order.gross_value || 0), Desconto: Number(order.discount_value || 0), Líquido: Number(order.total_value || 0), 'Desconto %': discountRate(order), Frete: order.quote?.freight_type || '—', Pagamento: order.payment_terms || order.quote?.payment_terms || '—', Entrega: reportDate(order.expected_delivery_date || order.quote?.delivery_date), Status: String(order.status || '').replaceAll('_', ' '), 'PDF emitido': order.sent_at ? 'Sim' : 'Não'
+    Pedido: reportOrderCode(order.order_number), Data: reportDate(order.created_at), RC: reportRcCode(order.request?.request_number), Atividade: orderActivity(order), Materiais: orderMaterials(order), Quantidade: orderQuantityLabel(order), Unidade: orderUnits(order), Fornecedor: order.supplier?.legal_name || '—', Ramo: order.supplier?.business_sector || '—', Solicitante: personName(order.request?.requester), Comprador: personName(order.creator), Bruto: Number(order.gross_value || 0), Desconto: Number(order.discount_value || 0), Líquido: Number(order.total_value || 0), 'Desconto %': discountRate(order), Frete: order.quote?.freight_type || '—', Pagamento: order.payment_terms || order.quote?.payment_terms || '—', Entrega: reportDate(order.expected_delivery_date || order.quote?.delivery_date), Status: String(order.status || '').replaceAll('_', ' '), 'PDF emitido': order.sent_at ? 'Sim' : 'Não'
   }));
 }
 
 function renderDetails(entries) {
   const body = document.querySelector('[data-report-details]');
   const statusClasses = { em_aprovacao: 'approval', aprovado: 'approved', reprovado: 'rejected', enviado: 'issued', recebido: 'approved', cancelado: 'cancelled', rascunho: 'pending' };
-  body.innerHTML = entries.length ? entries.map((order) => `<tr><td><strong>${reportOrderCode(order.order_number)}</strong></td><td>${reportDate(order.created_at)}</td><td>${reportRcCode(order.request?.request_number)}</td><td>${reportEscape(orderActivity(order))}</td><td>${reportEscape(orderMaterials(order))}</td><td>${reportEscape(orderUnits(order))}</td><td>${reportEscape(order.supplier?.legal_name)}</td><td>${reportEscape(order.supplier?.business_sector)}</td><td>${reportEscape(personName(order.request?.requester))}</td><td>${reportEscape(personName(order.creator))}</td><td>${reportMoney(order.gross_value)}</td><td class="report-saving">${reportMoney(order.discount_value)}</td><td><strong>${reportMoney(order.total_value)}</strong></td><td>${reportEscape(order.quote?.freight_type)}</td><td>${reportEscape(order.payment_terms || order.quote?.payment_terms)}</td><td>${reportDate(order.expected_delivery_date || order.quote?.delivery_date)}</td><td><span class="status ${statusClasses[order.status] || 'pending'}">${reportEscape(String(order.status || '').replaceAll('_', ' '))}</span></td></tr>`).join('') : '<tr><td colspan="17" class="empty-cell">Nenhum pedido corresponde aos filtros selecionados.</td></tr>';
+  body.innerHTML = entries.length ? entries.map((order) => `<tr><td><strong>${reportOrderCode(order.order_number)}</strong></td><td>${reportDate(order.created_at)}</td><td>${reportRcCode(order.request?.request_number)}</td><td>${reportEscape(orderActivity(order))}</td><td>${reportEscape(orderMaterials(order))}</td><td>${reportEscape(orderQuantityLabel(order))}</td><td>${reportEscape(orderUnits(order))}</td><td>${reportEscape(order.supplier?.legal_name)}</td><td>${reportEscape(order.supplier?.business_sector)}</td><td>${reportEscape(personName(order.request?.requester))}</td><td>${reportEscape(personName(order.creator))}</td><td>${reportMoney(order.gross_value)}</td><td class="report-saving">${reportMoney(order.discount_value)}</td><td><strong>${reportMoney(order.total_value)}</strong></td><td>${reportEscape(order.quote?.freight_type)}</td><td>${reportEscape(order.payment_terms || order.quote?.payment_terms)}</td><td>${reportDate(order.expected_delivery_date || order.quote?.delivery_date)}</td><td><span class="status ${statusClasses[order.status] || 'pending'}">${reportEscape(String(order.status || '').replaceAll('_', ' '))}</span></td></tr>`).join('') : '<tr><td colspan="18" class="empty-cell">Nenhum pedido corresponde aos filtros selecionados.</td></tr>';
 }
 
 function renderInventory(entries) {
@@ -160,7 +165,7 @@ function exportReport() {
   const discountRows = suppliers.map((group) => ({ Fornecedor: group.label, Bruto: group.gross, Desconto: group.discount, 'Desconto %': group.gross ? (group.discount / group.gross) * 100 : 0 }));
   const periodRows = periodSummary(filteredReportOrders).map((group) => ({ Período: group.label, Pedidos: group.orders, Bruto: group.gross, Desconto: group.discount, Líquido: group.net }));
   const stockRows = filteredReportInventory.map((item) => ({ Código: reportMaterialCode(item.material_number), Material: item.description, Unidade: item.unit_of_measure, 'Estoque atual': Number(item.current_stock), Mínimo: Number(item.minimum_stock), Máximo: Number(item.maximum_stock), Entradas: Number(item.total_entries), Saídas: Number(item.total_exits), Situação: inventoryStatus(item).label, 'Última movimentação': reportDate(item.last_movement_date) }));
-  const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, sheetFromRows(summaryRows, [28, 25]), 'Resumo'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(detailRows(filteredReportOrders), [13, 12, 13, 28, 42, 12, 28, 22, 24, 24, 15, 15, 15, 14, 12, 24, 14, 15, 13]), 'Pedidos'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(stockRows, [14, 38, 12, 16, 14, 14, 14, 14, 22, 20]), 'MRP Estoque'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(activities, [35, 12, 16, 16, 16]), 'Por Atividade'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(supplierRows, [35, 12, 18, 16]), 'Por Fornecedor'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(discountRows, [35, 18, 18, 16]), 'Descontos'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(periodRows, [15, 12, 18, 18, 18]), 'Por Período');
+  const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, sheetFromRows(summaryRows, [28, 25]), 'Resumo'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(detailRows(filteredReportOrders), [13, 12, 13, 28, 42, 16, 12, 28, 22, 24, 24, 15, 15, 15, 14, 12, 24, 14, 15, 13]), 'Pedidos'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(stockRows, [14, 38, 12, 16, 14, 14, 14, 14, 22, 20]), 'MRP Estoque'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(activities, [35, 12, 16, 16, 16]), 'Por Atividade'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(supplierRows, [35, 12, 18, 16]), 'Por Fornecedor'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(discountRows, [35, 18, 18, 16]), 'Descontos'); XLSX.utils.book_append_sheet(workbook, sheetFromRows(periodRows, [15, 12, 18, 18, 18]), 'Por Período');
   XLSX.writeFile(workbook, `veltrian-relatorios-${new Date().toISOString().slice(0, 10)}.xlsx`); showReportNotice('Relatório exportado para Excel com sucesso.');
 }
 
