@@ -1,0 +1,37 @@
+.footer-wrap {
+  display: grid;
+  grid-template-columns: auto minmax(280px, 1fr) auto;
+  align-items: center;
+  gap: 1.5rem 3rem;
+}
+
+.footer-company-details {
+  text-align: center;
+}
+
+.footer-company-details p {
+  margin: 0 0 .35rem;
+  color: #e3ebec;
+  font-weight: 700;
+}
+
+.footer-company-details address {
+  font-style: normal;
+  line-height: 1.55;
+}
+
+.footer-copyright {
+  text-align: right;
+}
+
+@media (max-width: 800px) {
+  .footer-wrap {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .footer-company-details,
+  .footer-copyright {
+    text-align: left;
+  }
+}
