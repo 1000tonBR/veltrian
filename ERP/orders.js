@@ -22,11 +22,12 @@ let ordersInitialized = false;
 
 const escapeOrder = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 const orderMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const orderNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 const orderDate = (value, includeTime = true) => value ? new Intl.DateTimeFormat('pt-BR', includeTime ? { dateStyle: 'short', timeStyle: 'short' } : { dateStyle: 'short' }).format(new Date(`${value}${String(value).includes('T') ? '' : 'T12:00:00'}`)) : '—';
 const orderCode = (number) => `PC-${String(number).padStart(4, '0')}`;
 const orderRcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
 const orderMaterial = (request) => request?.lines?.map((line) => `${line.item?.material_number ? `MAT-${String(line.item.material_number).padStart(4, '0')} · ` : ''}${line.item?.description || ''}`).filter(Boolean).join(', ') || '—';
-const orderQuantity = (request) => request?.lines?.map((line) => line.quantity).filter(Boolean).join(', ') || '—';
+const orderQuantity = (request) => request?.lines?.map((line) => orderNumber(line.quantity)).filter(Boolean).join(', ') || '—';
 const orderUnit = (request) => request?.lines?.map((line) => line.item?.unit_of_measure || '—').join(', ') || '—';
 const orderRequester = (request) => request?.requester?.full_name || request?.requester?.email || 'Solicitante não identificado';
 const normalizeOrderSearch = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
@@ -140,8 +141,8 @@ function renderOrders(entries = orders) {
   body.innerHTML = entries.length ? entries.map((order) => {
     const delivery = emailDeliveries.get(order.id); const pdfReady = ['aprovado', 'enviado', 'recebido'].includes(order.status); const editable = ['rascunho', 'reprovado'].includes(order.status); const deletable = !['enviado', 'recebido'].includes(order.status);
     const actions = `${pdfReady ? `<button type="button" class="row-button send-order-button" data-pdf-order="${order.id}">${delivery ? 'Reenviar por e-mail' : 'Gerar e enviar'}</button>` : ''}${editable ? `<button type="button" class="row-button" data-edit-order="${order.id}">${order.status === 'reprovado' ? 'Revisar e reenviar' : 'Editar'}</button>` : ''}${deletable ? `<button type="button" class="row-button danger" data-delete-order="${order.id}">Excluir</button>` : ''}`;
-    return `<tr><td>${orderCode(order.order_number)}</td><td>${orderRcCode(order.request?.request_number || '')}</td><td>${escapeOrder(order.supplier?.legal_name)}</td><td>${escapeOrder(orderMaterial(order.request))}</td><td>${escapeOrder(orderUnit(order.request))}</td><td><strong>${orderMoney(order.total_value)}</strong></td><td>${escapeOrder(order.selection_reason || 'Menor preço')}</td><td>${orderStatusBadge(order.status)}</td><td>${orderEmailBadge(delivery)}</td><td>${orderDate(order.created_at)}</td><td class="table-actions">${actions || '—'}</td></tr>`;
-  }).join('') : '<tr><td colspan="11" class="empty-cell">Nenhum pedido emitido.</td></tr>';
+    return `<tr><td>${orderCode(order.order_number)}</td><td>${orderRcCode(order.request?.request_number || '')}</td><td>${escapeOrder(order.supplier?.legal_name)}</td><td>${escapeOrder(orderMaterial(order.request))}</td><td><strong>${escapeOrder(orderQuantity(order.request))}</strong></td><td>${escapeOrder(orderUnit(order.request))}</td><td><strong>${orderMoney(order.total_value)}</strong></td><td>${escapeOrder(order.selection_reason || 'Menor preço')}</td><td>${orderStatusBadge(order.status)}</td><td>${orderEmailBadge(delivery)}</td><td>${orderDate(order.created_at)}</td><td class="table-actions">${actions || '—'}</td></tr>`;
+  }).join('') : '<tr><td colspan="12" class="empty-cell">Nenhum pedido emitido.</td></tr>';
   if (orderListResultCount) orderListResultCount.textContent = entries.length === 1 ? '1 pedido encontrado' : `${entries.length} pedidos encontrados`;
 }
 
