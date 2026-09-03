@@ -17,6 +17,7 @@ let quoteNoticeTimer;
 
 const escapeQuote = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 const quoteMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const quoteUnitMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 });
 const quoteNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 const quoteDate = (value, includeTime = true) => value ? new Intl.DateTimeFormat('pt-BR', includeTime ? { dateStyle: 'short', timeStyle: 'short' } : { dateStyle: 'short' }).format(new Date(`${value}${String(value).includes('T') ? '' : 'T12:00:00'}`)) : '—';
 const quoteRcCode = (number) => `RC-${String(number).padStart(4, '0')}`;
@@ -24,6 +25,10 @@ const quoteMaterial = (request) => request?.lines?.map((line) => line.item?.desc
 const quoteMaterialCode = (request) => request?.lines?.map((line) => line.item?.material_number ? `MAT-${String(line.item.material_number).padStart(4, '0')}` : '—').join(', ') || '—';
 const quoteQuantity = (request) => request?.lines?.map((line) => quoteNumber(line.quantity)).join(', ') || '—';
 const quoteMaterialUnit = (request) => request?.lines?.map((line) => line.item?.unit_of_measure || '—').join(', ') || '—';
+const quoteUnitPrice = (quote) => {
+  const quantities = quote.request?.lines?.map((line) => Number(line.quantity)).filter((quantity) => Number.isFinite(quantity) && quantity > 0) || [];
+  return quantities.length === 1 ? quoteUnitMoney(Number(quote.quoted_value || 0) / quantities[0]) : '—';
+};
 const quoteActivity = (request) => request?.activity ? `${request.activity.code} · ${request.activity.description}` : '—';
 const quoteRequester = (request) => request?.requester?.full_name || request?.requester?.email || 'Solicitante não identificado';
 const normalizeQuoteSearch = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
@@ -138,8 +143,8 @@ function renderQuotes(entries = quotes) {
     if (quote.selected && order?.status === 'reprovado') result = '<span class="status rejected">Pedido rejeitado</span>';
     if (quote.selected && !order) result = '<span class="status approval">Escolhida no pedido</span>';
     const actions = locked ? '—' : `<button type="button" class="row-button" data-edit-quote="${quote.purchase_request_id}">Editar</button><button type="button" class="row-button danger" data-delete-quote="${quote.purchase_request_id}">Excluir</button>`;
-    return `<tr class="${lowest ? 'winner-row' : ''}"><td>${quoteRcCode(request?.request_number || '')}</td><td>${escapeQuote(quoteMaterialCode(request))}</td><td>${escapeQuote(quoteMaterial(request))}</td><td>${escapeQuote(quoteMaterialUnit(request))}</td><td>${escapeQuote(quote.supplier?.legal_name)}</td><td>${quoteMoney(quote.quoted_value)}</td><td>${quoteMoney(quote.discount_value)}</td><td><strong>${quoteMoney(quote.net_value)}</strong></td><td>${quoteDate(quote.delivery_date, false)}</td><td>${escapeQuote(quote.freight_type)}</td><td>${escapeQuote(quote.payment_terms)}</td><td>${result}</td><td>${quoteDate(quote.created_at)}</td><td class="table-actions">${actions}</td></tr>`;
-  }).join('') : '<tr><td colspan="14" class="empty-cell">Nenhuma cotação cadastrada.</td></tr>';
+    return `<tr class="${lowest ? 'winner-row' : ''}"><td>${quoteRcCode(request?.request_number || '')}</td><td>${escapeQuote(quoteMaterialCode(request))}</td><td>${escapeQuote(quoteMaterial(request))}</td><td>${escapeQuote(quoteQuantity(request))}</td><td>${escapeQuote(quoteMaterialUnit(request))}</td><td>${escapeQuote(quote.supplier?.legal_name)}</td><td>${quoteUnitPrice(quote)}</td><td>${quoteMoney(quote.quoted_value)}</td><td>${quoteMoney(quote.discount_value)}</td><td><strong>${quoteMoney(quote.net_value)}</strong></td><td>${quoteDate(quote.delivery_date, false)}</td><td>${escapeQuote(quote.freight_type)}</td><td>${escapeQuote(quote.payment_terms)}</td><td>${result}</td><td>${quoteDate(quote.created_at)}</td><td class="table-actions">${actions}</td></tr>`;
+  }).join('') : '<tr><td colspan="16" class="empty-cell">Nenhuma cotação cadastrada.</td></tr>';
 }
 
 async function loadQuoteReferences() {
