@@ -55,6 +55,9 @@ function orderStatusBadge(status) {
   const classes = { rascunho: 'pending', em_aprovacao: 'approval', aprovado: 'approved', reprovado: 'rejected', enviado: 'issued', recebido: 'approved', cancelado: 'cancelled' };
   return `<span class="status ${classes[status] || 'pending'}">${labels[status] || escapeOrder(status)}</span>`;
 }
+const onlineQuoteLabels = { aguardando_envio: 'Aguardando envio', enviada: 'Enviada', entregue: 'Entregue', acessada: 'Acessada', respondida: 'Respondida', expirada: 'Expirada', erro_envio: 'Erro no envio', cancelada: 'Cancelada', resposta_tardia: 'Resposta após encerramento' };
+function orderQuoteOrigin(quote) { return quote?.origin === 'online' || quote?.online_invitation_id ? 'Online' : 'Manual'; }
+function orderQuoteProgress(quote) { return orderQuoteOrigin(quote) === 'Online' ? onlineQuoteLabels[quote?.invitation?.status] || 'Aguardando envio' : 'Preenchida'; }
 
 function orderEmailBadge(delivery) {
   if (!delivery) return '<span class="email-delivery none">Não enviado</span>';
@@ -124,8 +127,8 @@ function lockOrderRequestFilter() {
 
 function renderQuoteChoices(selectedQuoteId = '') {
   const requestQuotes = quotesForRequest(orderRequestSelect.value);
-  orderQuoteSelect.innerHTML = requestQuotes.length ? requestQuotes.map((quote, index) => `<option value="${quote.id}" ${quote.id === selectedQuoteId || (!selectedQuoteId && index === 0) ? 'selected' : ''}>${index === 0 ? 'MENOR PREÇO · ' : ''}${escapeOrder(quote.supplier?.legal_name)} · ${orderMoney(quote.net_value)} · ${orderDate(quote.delivery_date, false)}</option>`).join('') : '<option value="">Nenhuma cotação disponível</option>';
-  document.querySelector('[data-order-comparison]').innerHTML = requestQuotes.map((quote, index) => `<article class="comparison-card ${index === 0 ? 'best' : ''}"><span>${index === 0 ? 'Menor preço' : `Opção ${index + 1}`}</span><strong>${escapeOrder(quote.supplier?.legal_name)}</strong><b>${orderMoney(quote.net_value)}</b><small>Entrega: ${orderDate(quote.delivery_date, false)} · Frete: ${escapeOrder(quote.freight_type)} · Pagamento: ${escapeOrder(quote.payment_terms)}</small></article>`).join('');
+  orderQuoteSelect.innerHTML = requestQuotes.length ? requestQuotes.map((quote, index) => `<option value="${quote.id}" ${quote.id === selectedQuoteId || (!selectedQuoteId && index === 0) ? 'selected' : ''}>${index === 0 ? 'MENOR PREÇO · ' : ''}[${orderQuoteOrigin(quote).toUpperCase()} · ${orderQuoteProgress(quote).toUpperCase()}] ${escapeOrder(quote.supplier?.legal_name)} · ${orderMoney(quote.net_value)} · ${orderDate(quote.delivery_date, false)}</option>`).join('') : '<option value="">Nenhuma cotação disponível</option>';
+  document.querySelector('[data-order-comparison]').innerHTML = requestQuotes.map((quote, index) => `<article class="comparison-card ${index === 0 ? 'best' : ''}"><span>${index === 0 ? 'Menor preço' : `Opção ${index + 1}`}</span><strong>${escapeOrder(quote.supplier?.legal_name)}</strong><b>${orderMoney(quote.net_value)}</b><small>Origem: ${orderQuoteOrigin(quote)} · Cotação: ${orderQuoteProgress(quote)} · Entrega: ${orderDate(quote.delivery_date, false)} · Frete: ${escapeOrder(quote.freight_type)} · Pagamento: ${escapeOrder(quote.payment_terms)}</small></article>`).join('');
   updateOrderSummary();
 }
 
@@ -133,7 +136,7 @@ function updateOrderSummary() {
   const requestQuotes = quotesForRequest(orderRequestSelect.value); const quote = requestQuotes.find((entry) => entry.id === orderQuoteSelect.value); const lowest = requestQuotes[0];
   if (!quote) { document.querySelector('[data-order-summary]').textContent = 'Selecione uma requisição cotada.'; reasonField.hidden = true; return; }
   const isHigher = lowest && Number(quote.net_value) > Number(lowest.net_value); reasonField.hidden = !isHigher; reasonField.querySelector('textarea').required = isHigher;
-  document.querySelector('[data-order-summary]').innerHTML = `<strong>${escapeOrder(quote.supplier?.legal_name)}</strong><span>${orderRcCode(quote.request?.request_number || '')} · ${escapeOrder(orderMaterial(quote.request))} · Qtd. ${escapeOrder(orderQuantity(quote.request))} ${escapeOrder(orderUnit(quote.request))}</span><span>Solicitante: ${escapeOrder(orderRequester(quote.request))} · Cadastro: ${orderDate(quote.request?.created_at, false)}</span><span>Líquido: <b>${orderMoney(quote.net_value)}</b> · Entrega: ${orderDate(quote.delivery_date, false)} · Frete: ${escapeOrder(quote.freight_type)} · Pagamento: ${escapeOrder(quote.payment_terms)}</span>${isHigher ? `<em>Esta proposta está ${orderMoney(Number(quote.net_value) - Number(lowest.net_value))} acima do menor preço.</em>` : '<em class="best-choice">Menor preço sugerido automaticamente.</em>'}`;
+  document.querySelector('[data-order-summary]').innerHTML = `<strong>${escapeOrder(quote.supplier?.legal_name)}</strong><span>${orderRcCode(quote.request?.request_number || '')} · ${escapeOrder(orderMaterial(quote.request))} · Qtd. ${escapeOrder(orderQuantity(quote.request))} ${escapeOrder(orderUnit(quote.request))}</span><span>Origem: ${orderQuoteOrigin(quote)} · Cotação: ${orderQuoteProgress(quote)} · Solicitante: ${escapeOrder(orderRequester(quote.request))} · Cadastro: ${orderDate(quote.request?.created_at, false)}</span><span>Líquido: <b>${orderMoney(quote.net_value)}</b> · Entrega: ${orderDate(quote.delivery_date, false)} · Frete: ${escapeOrder(quote.freight_type)} · Pagamento: ${escapeOrder(quote.payment_terms)}</span>${isHigher ? `<em>Esta proposta está ${orderMoney(Number(quote.net_value) - Number(lowest.net_value))} acima do menor preço.</em>` : '<em class="best-choice">Menor preço sugerido automaticamente.</em>'}`;
 }
 
 function renderOrders(entries = orders) {
@@ -169,7 +172,7 @@ function applyOrderListFilters() {
 }
 
 async function loadAllQuotes() {
-  const { data, error } = await orderClient.from('quotes').select('*,supplier:suppliers(id,legal_name,trade_name,tax_id,contact_email,contact_phone,street,address_number,city,state),request:purchase_requests(id,request_number,description,created_at,requester:profiles!purchase_requests_requested_by_fkey(full_name,email),activity:activities(code,description),lines:purchase_request_items(quantity,notes,item:items(description,manufacturer,serial_number,material_number,unit_of_measure)))').order('created_at', { ascending: false });
+  const { data, error } = await orderClient.from('quotes').select('*,supplier:suppliers(id,legal_name,trade_name,tax_id,contact_email,contact_phone,street,address_number,city,state),invitation:quote_invitations!quotes_online_invitation_id_fkey(status),request:purchase_requests(id,request_number,description,created_at,requester:profiles!purchase_requests_requested_by_fkey(full_name,email),activity:activities(code,description),lines:purchase_request_items(quantity,notes,item:items(description,manufacturer,serial_number,material_number,unit_of_measure)))').order('created_at', { ascending: false });
   if (error) return showOrderNotice(`Não foi possível carregar as cotações: ${error.message}`, 'error'); allQuotes = data || [];
 }
 
