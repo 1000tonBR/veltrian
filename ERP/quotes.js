@@ -9,6 +9,8 @@ const requestFilterField = document.querySelector('[data-request-filter-field]')
 const requestFilterInput = document.querySelector('[data-request-filter]');
 const requestDateFilter = document.querySelector('[data-request-date-filter]');
 const requestResultCount = document.querySelector('[data-request-result-count]');
+const quoteListFilter = document.querySelector('[data-quote-filter]');
+const quoteStatusFilter = document.querySelector('[data-quote-status-filter]');
 let quoteRequests = [];
 let quoteSuppliers = [];
 let quotes = [];
@@ -32,6 +34,22 @@ const quoteUnitPrice = (quote) => {
 const quoteActivity = (request) => request?.activity ? `${request.activity.code} · ${request.activity.description}` : '—';
 const quoteRequester = (request) => request?.requester?.full_name || request?.requester?.email || 'Solicitante não identificado';
 const normalizeQuoteSearch = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+const quoteOrigin = (quote) => quote?.origin === 'online' ? 'online' : 'manual';
+const quoteOnlineStatuses = {
+  enviada: { label: 'Enviada', className: 'quote-sent' },
+  entregue: { label: 'Entregue', className: 'quote-delivered' },
+  acessada: { label: 'Acessada', className: 'quote-accessed' },
+  respondida: { label: 'Respondida', className: 'quote-responded' },
+  expirada: { label: 'Expirada', className: 'quote-expired' },
+  erro_envio: { label: 'Erro no envio', className: 'quote-error' }
+};
+const quoteProgress = (quote) => {
+  if (quoteOrigin(quote) === 'manual') return { key: 'manual', label: 'Preenchida', className: 'quote-manual' };
+  const key = quoteOnlineStatuses[quote?.online_status] ? quote.online_status : 'enviada';
+  return { key, ...quoteOnlineStatuses[key] };
+};
+const quoteOriginBadge = (quote) => `<span class="status ${quoteOrigin(quote) === 'online' ? 'quote-online' : 'quote-manual'}">${quoteOrigin(quote) === 'online' ? 'Online' : 'Manual'}</span>`;
+const quoteProgressBadge = (quote) => { const progress = quoteProgress(quote); return `<span class="status ${progress.className}">${progress.label}</span>`; };
 const quoteDateKey = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
@@ -143,8 +161,18 @@ function renderQuotes(entries = quotes) {
     if (quote.selected && order?.status === 'reprovado') result = '<span class="status rejected">Pedido rejeitado</span>';
     if (quote.selected && !order) result = '<span class="status approval">Escolhida no pedido</span>';
     const actions = locked ? '—' : `<button type="button" class="row-button" data-edit-quote="${quote.purchase_request_id}">Editar</button><button type="button" class="row-button danger" data-delete-quote="${quote.purchase_request_id}">Excluir</button>`;
-    return `<tr class="${lowest ? 'winner-row' : ''}"><td>${quoteRcCode(request?.request_number || '')}</td><td>${escapeQuote(quoteMaterialCode(request))}</td><td>${escapeQuote(quoteMaterial(request))}</td><td>${escapeQuote(quoteQuantity(request))}</td><td>${escapeQuote(quoteMaterialUnit(request))}</td><td>${escapeQuote(quote.supplier?.legal_name)}</td><td>${quoteUnitPrice(quote)}</td><td>${quoteMoney(quote.quoted_value)}</td><td>${quoteMoney(quote.discount_value)}</td><td><strong>${quoteMoney(quote.net_value)}</strong></td><td>${quoteDate(quote.delivery_date, false)}</td><td>${escapeQuote(quote.freight_type)}</td><td>${escapeQuote(quote.payment_terms)}</td><td>${result}</td><td>${quoteDate(quote.created_at)}</td><td class="table-actions">${actions}</td></tr>`;
-  }).join('') : '<tr><td colspan="16" class="empty-cell">Nenhuma cotação cadastrada.</td></tr>';
+    return `<tr class="${lowest ? 'winner-row' : ''}"><td>${quoteRcCode(request?.request_number || '')}</td><td>${escapeQuote(quoteMaterialCode(request))}</td><td>${escapeQuote(quoteMaterial(request))}</td><td>${escapeQuote(quoteQuantity(request))}</td><td>${escapeQuote(quoteMaterialUnit(request))}</td><td>${escapeQuote(quote.supplier?.legal_name)}</td><td>${quoteUnitPrice(quote)}</td><td>${quoteMoney(quote.quoted_value)}</td><td>${quoteMoney(quote.discount_value)}</td><td><strong>${quoteMoney(quote.net_value)}</strong></td><td>${quoteDate(quote.delivery_date, false)}</td><td>${escapeQuote(quote.freight_type)}</td><td>${escapeQuote(quote.payment_terms)}</td><td>${quoteOriginBadge(quote)}</td><td>${quoteProgressBadge(quote)}</td><td>${result}</td><td>${quoteDate(quote.created_at)}</td><td class="table-actions">${actions}</td></tr>`;
+  }).join('') : '<tr><td colspan="18" class="empty-cell">Nenhuma cotação corresponde aos filtros selecionados.</td></tr>';
+}
+
+function applyQuoteListFilters() {
+  const term = normalizeQuoteSearch(quoteListFilter?.value);
+  const status = quoteStatusFilter?.value || 'all';
+  renderQuotes(quotes.filter((quote) => {
+    const progress = quoteProgress(quote);
+    const matchesText = !term || [quoteRcCode(quote.request?.request_number || ''), quoteMaterialCode(quote.request), quoteMaterial(quote.request), quoteActivity(quote.request), quote.supplier?.legal_name].some((value) => normalizeQuoteSearch(value).includes(term));
+    return matchesText && (status === 'all' || progress.key === status);
+  }));
 }
 
 async function loadQuoteReferences() {
@@ -215,7 +243,8 @@ quoteForm.addEventListener('submit', async (event) => {
 });
 
 document.querySelector('[data-quotes-rows]').addEventListener('click', (event) => { const edit = event.target.closest('[data-edit-quote]'); const remove = event.target.closest('[data-delete-quote]'); if (edit) editQuote(edit.dataset.editQuote); if (remove) deleteQuoteGroup(remove.dataset.deleteQuote); });
-document.querySelector('[data-quote-filter]').addEventListener('input', (event) => { const term = event.target.value.trim().toLocaleLowerCase('pt-BR'); renderQuotes(quotes.filter((quote) => [quoteRcCode(quote.request?.request_number || ''), quoteMaterialCode(quote.request), quoteMaterial(quote.request), quoteActivity(quote.request), quote.supplier?.legal_name].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term)))); });
+quoteListFilter?.addEventListener('input', applyQuoteListFilters);
+quoteStatusFilter?.addEventListener('change', applyQuoteListFilters);
 
 Promise.all([loadQuoteReferences(), loadQuotes()]).then(() => {
   renderRequestOptions();
