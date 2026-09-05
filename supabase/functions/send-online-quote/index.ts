@@ -68,6 +68,7 @@ Deno.serve(async (request) => {
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
     const fromEmail = Deno.env.get('QUOTE_FROM_EMAIL') || Deno.env.get('PURCHASE_ORDER_FROM_EMAIL')
+    const quotePortalUrl = Deno.env.get('QUOTE_PORTAL_URL') || 'https://www.veltrian.com.br/ERP/quote-response.html'
     if (!resendApiKey || !fromEmail) return json({ error: 'O serviço de e-mail ainda não foi configurado no Supabase.' }, 503)
 
     const admin = createClient(supabaseUrl, adminKey(), { auth: { persistSession: false } })
@@ -101,7 +102,7 @@ Deno.serve(async (request) => {
       const tokenHash = await sha256(rawToken)
       const now = new Date().toISOString()
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      const responseUrl = `${supabaseUrl}/functions/v1/quote-response?token=${encodeURIComponent(rawToken)}`
+      const responseUrl = `${quotePortalUrl}#token=${encodeURIComponent(rawToken)}`
       const requestCode = `RC-${String(purchaseRequest?.request_number ?? '').padStart(4, '0')}`
       const items = (purchaseRequest?.lines ?? []).map((line: any) => {
         const item = relation(line.item)
