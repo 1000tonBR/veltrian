@@ -28,6 +28,7 @@ let visibleOnlineSuppliers = [];
 let selectedOnlineSupplierIds = new Set();
 let editingRequestId = null;
 let quoteNoticeTimer;
+let lastOnlineStatusSync = 0;
 
 const escapeQuote = (value) => String(value ?? '—').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 const quoteMoney = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -211,7 +212,8 @@ function renderQuotes(entries = quoteMapEntries()) {
     const request = quote.request; const lowest = Number(quote.net_value) === lowestByRequest.get(quote.purchase_request_id); const order = [...(request?.orders || [])].sort((a,b) => Number(b.order_number) - Number(a.order_number))[0]; const locked = order && ['em_aprovacao','aprovado','enviado','recebido'].includes(order.status);
     if (quote.kind === 'invitation') {
       const canCancel = !locked && !['respondida', 'cancelada', 'resposta_tardia'].includes(quote.status);
-      const actions = `<span class="quote-entry-actions"><button type="button" class="row-button" data-open-online-request="${quote.purchase_request_id}">Abrir</button>${canCancel ? `<button type="button" class="row-button danger" data-cancel-online-invitation="${quote.id}">Cancelar</button>` : ''}</span>`;
+      const canSend = !locked && ['aguardando_envio', 'erro_envio', 'expirada'].includes(quote.status);
+      const actions = `<span class="quote-entry-actions"><button type="button" class="row-button" data-open-online-request="${quote.purchase_request_id}">Abrir</button>${canSend ? `<button type="button" class="row-button send-order-button" data-send-online-invitation="${quote.id}">${quote.status === 'aguardando_envio' ? 'Enviar agora' : 'Reenviar'}</button>` : ''}${canCancel ? `<button type="button" class="row-button danger" data-cancel-online-invitation="${quote.id}">Cancelar</button>` : ''}</span>`;
       return `<tr><td>${quoteRcCode(request?.request_number || '')}</td><td>${escapeQuote(quoteMaterialCode(request))}</td><td>${escapeQuote(quoteMaterial(request))}</td><td>${escapeQuote(quoteQuantity(request))}</td><td>${escapeQuote(quoteMaterialUnit(request))}</td><td>${escapeQuote(quote.supplier?.legal_name)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>${quoteOriginBadge(quote)}</td><td>${quoteProgressBadge(quote)}</td><td><span class="status pending">Aguardando fornecedor</span></td><td>${quoteDate(quote.created_at)}</td><td class="table-actions">${actions}</td></tr>`;
     }
     let result = lowest ? '<span class="status won">Cotação ganha</span>' : '<span class="status pending">Participante</span>';
@@ -303,7 +305,7 @@ function updateOnlineSelection() {
   onlineSelectAll.indeterminate = selectedVisible.length > 0 && selectedVisible.length < availableVisible.length;
   const count = selectedOnlineSupplierIds.size;
   onlineSelectedCount.textContent = count === 1 ? '1 fornecedor selecionado' : `${count} fornecedores selecionados`;
-  prepareOnlineQuotesButton.textContent = `Preparar ${count} ${count === 1 ? 'fornecedor' : 'fornecedores'}`;
+  prepareOnlineQuotesButton.textContent = `Enviar para ${count} ${count === 1 ? 'fornecedor' : 'fornecedores'}`;
   prepareOnlineQuotesButton.disabled = count === 0;
 }
 function openOnlineQuoteDialog() {
@@ -322,13 +324,34 @@ async function prepareOnlineQuotes() {
   const { data: authData, error: authError } = await quoteClient.auth.getUser();
   if (authError || !authData.user) { prepareOnlineQuotesButton.disabled = false; return showQuoteNotice('Sua sessão expirou. Entre novamente para continuar.', 'error'); }
   const rows = selected.map((supplier) => ({ purchase_request_id: requestId, supplier_id: supplier.id, recipient_email: supplier.contact_email.trim().toLowerCase(), status: 'aguardando_envio', created_by: authData.user.id }));
-  const { error } = await quoteClient.from('quote_invitations').insert(rows);
+  const { data: created, error } = await quoteClient.from('quote_invitations').insert(rows).select('id');
   if (error) { prepareOnlineQuotesButton.disabled = false; return showQuoteNotice(`Solicitações online não preparadas: ${error.message}`, 'error'); }
   await quoteClient.from('purchase_requests').update({ status: 'em_cotacao' }).eq('id', requestId);
-  closeOnlineQuoteDialog(); await loadQuoteInvitations();
+  closeOnlineQuoteDialog();
+  const sendResult = await sendOnlineInvitations((created || []).map((entry) => entry.id), false);
+  await Promise.all([loadQuotes(), loadQuoteInvitations()]);
   const manualQuotes = quotes.filter((quote) => quote.purchase_request_id === requestId && quoteOrigin(quote) === 'manual');
   renderQuoteOptions(manualQuotes);
-  showQuoteNotice(`${selected.length} ${selected.length === 1 ? 'fornecedor preparado' : 'fornecedores preparados'} para o futuro envio online.`);
+  if (sendResult?.sent) showQuoteNotice(`${sendResult.sent} ${sendResult.sent === 1 ? 'cotação enviada' : 'cotações enviadas'} por e-mail${sendResult.failed ? `; ${sendResult.failed} falharam` : ''}.`, sendResult.failed ? 'error' : 'success');
+  else showQuoteNotice(sendResult?.error || 'As solicitações foram criadas, mas o e-mail não pôde ser enviado. Use “Reenviar” no mapa de cotações.', 'error');
+}
+
+async function sendOnlineInvitations(invitationIds, showResult = true) {
+  if (!invitationIds.length) return null;
+  const { data, error } = await quoteClient.functions.invoke('send-online-quote', { body: { invitationIds } });
+  if (error || data?.error) {
+    if (showResult) showQuoteNotice(data?.error || error?.message || 'Não foi possível enviar a cotação por e-mail.', 'error');
+    return data || { sent: 0, failed: invitationIds.length, error: error?.message };
+  }
+  if (showResult) showQuoteNotice(`${data.sent} ${data.sent === 1 ? 'cotação enviada' : 'cotações enviadas'} por e-mail${data.failed ? `; ${data.failed} falharam` : ''}.`, data.failed ? 'error' : 'success');
+  return data;
+}
+
+async function retryOnlineInvitation(invitationId) {
+  showQuoteNotice('Enviando a cotação ao fornecedor…');
+  await sendOnlineInvitations([invitationId]);
+  await Promise.all([loadQuotes(), loadQuoteInvitations()]);
+  renderOnlineQuoteOptions();
 }
 async function cancelOnlineInvitation(invitationId) {
   const invitation = quoteInvitations.find((entry) => entry.id === invitationId);
@@ -407,7 +430,7 @@ quoteForm.addEventListener('submit', async (event) => {
   resetQuoteForm(); refreshQuotes(wasEditing ? 'Cotação atualizada com sucesso. Atualizando os dados…' : 'Cotação salva com sucesso. Atualizando os dados…');
 });
 
-document.querySelector('[data-quotes-rows]').addEventListener('click', (event) => { const edit = event.target.closest('[data-edit-quote]'); const remove = event.target.closest('[data-delete-quote]'); const open = event.target.closest('[data-open-online-request]'); const cancel = event.target.closest('[data-cancel-online-invitation]'); if (edit) editQuote(edit.dataset.editQuote); if (remove) deleteQuoteGroup(remove.dataset.deleteQuote); if (open) openOnlineRequest(open.dataset.openOnlineRequest); if (cancel) cancelOnlineInvitation(cancel.dataset.cancelOnlineInvitation); });
+document.querySelector('[data-quotes-rows]').addEventListener('click', (event) => { const edit = event.target.closest('[data-edit-quote]'); const remove = event.target.closest('[data-delete-quote]'); const open = event.target.closest('[data-open-online-request]'); const send = event.target.closest('[data-send-online-invitation]'); const cancel = event.target.closest('[data-cancel-online-invitation]'); if (edit) editQuote(edit.dataset.editQuote); if (remove) deleteQuoteGroup(remove.dataset.deleteQuote); if (open) openOnlineRequest(open.dataset.openOnlineRequest); if (send) retryOnlineInvitation(send.dataset.sendOnlineInvitation); if (cancel) cancelOnlineInvitation(cancel.dataset.cancelOnlineInvitation); });
 quoteListFilter?.addEventListener('input', applyQuoteListFilters);
 quoteStatusFilter?.addEventListener('change', applyQuoteListFilters);
 
@@ -416,3 +439,11 @@ Promise.all([loadQuoteReferences(), loadQuotes(), loadQuoteInvitations()]).then(
   renderQuoteOptions();
   updateRequestSummary();
 });
+
+setInterval(() => {
+  if (document.hidden) return;
+  const shouldSyncDelivery = Date.now() - lastOnlineStatusSync > 60000;
+  const deliverySync = shouldSyncDelivery ? quoteClient.functions.invoke('sync-online-quote-status', { body: {} }).catch(() => null) : Promise.resolve();
+  if (shouldSyncDelivery) lastOnlineStatusSync = Date.now();
+  deliverySync.finally(() => Promise.all([loadQuotes(), loadQuoteInvitations()]).then(() => renderOnlineQuoteOptions()));
+}, 15000);

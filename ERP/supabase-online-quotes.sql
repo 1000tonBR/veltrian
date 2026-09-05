@@ -259,3 +259,132 @@ comment on table public.quote_response_versions is
   'Histórico imutável das respostas enviadas pelo fornecedor para uma cotação online.';
 comment on column public.quotes.origin is
   'manual: lançada pelo comprador; online: recebida por uma solicitação online.';
+
+create or replace function public.record_online_quote_response(
+  p_invitation_id uuid,
+  p_quoted_value numeric,
+  p_delivery_date date,
+  p_freight_type text,
+  p_payment_terms text,
+  p_commercial_notes text default null
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  invitation public.quote_invitations%rowtype;
+  existing_quote public.quotes%rowtype;
+  next_version integer;
+  is_late boolean;
+  applied_discount numeric(12,2);
+  response_time timestamptz := now();
+begin
+  if p_quoted_value is null or p_quoted_value <= 0 then
+    raise exception 'O valor total da proposta deve ser maior que zero.' using errcode = '22023';
+  end if;
+  if p_delivery_date is null or p_delivery_date < current_date then
+    raise exception 'Informe uma data de entrega válida.' using errcode = '22023';
+  end if;
+  if p_freight_type not in ('CIF', 'FOB') then
+    raise exception 'Informe um tipo de frete válido.' using errcode = '22023';
+  end if;
+  if nullif(trim(p_payment_terms), '') is null then
+    raise exception 'Informe a condição de pagamento.' using errcode = '22023';
+  end if;
+
+  select * into invitation
+  from public.quote_invitations
+  where id = p_invitation_id
+  for update;
+
+  if not found then
+    raise exception 'Solicitação de cotação não encontrada.' using errcode = 'P0002';
+  end if;
+  if invitation.status = 'cancelada' then
+    raise exception 'Esta solicitação foi cancelada.' using errcode = 'P0001';
+  end if;
+  if invitation.expires_at is not null and invitation.expires_at < response_time
+     and invitation.status not in ('respondida', 'resposta_tardia') then
+    update public.quote_invitations set status = 'expirada' where id = invitation.id;
+    return jsonb_build_object('ok', false, 'expired', true);
+  end if;
+
+  is_late := exists (
+    select 1 from public.purchase_orders po
+    where po.purchase_request_id = invitation.purchase_request_id
+      and po.status in ('em_aprovacao', 'aprovado', 'enviado', 'recebido')
+  );
+
+  select coalesce(max(version_number), 0) + 1 into next_version
+  from public.quote_response_versions
+  where invitation_id = invitation.id;
+
+  insert into public.quote_response_versions (
+    invitation_id, version_number, quoted_value, delivery_date, freight_type,
+    payment_terms, commercial_notes, submitted_at, is_late
+  ) values (
+    invitation.id, next_version, p_quoted_value, p_delivery_date, p_freight_type,
+    trim(p_payment_terms), nullif(trim(p_commercial_notes), ''), response_time, is_late
+  );
+
+  if is_late then
+    update public.quote_invitations
+    set status = 'resposta_tardia', responded_at = response_time
+    where id = invitation.id;
+    return jsonb_build_object('ok', true, 'late', true, 'version', next_version);
+  end if;
+
+  select * into existing_quote
+  from public.quotes
+  where online_invitation_id = invitation.id
+  for update;
+
+  if found then
+    applied_discount := least(existing_quote.discount_value, p_quoted_value);
+    update public.quotes
+    set quoted_value = p_quoted_value,
+        discount_value = applied_discount,
+        net_value = p_quoted_value - applied_discount,
+        delivery_date = p_delivery_date,
+        freight_type = p_freight_type,
+        payment_terms = trim(p_payment_terms),
+        notes = nullif(trim(p_commercial_notes), ''),
+        supplier_submitted_at = response_time,
+        updated_at = response_time
+    where id = existing_quote.id;
+  else
+    if exists (
+      select 1 from public.quotes q
+      where q.purchase_request_id = invitation.purchase_request_id
+        and q.supplier_id = invitation.supplier_id
+    ) then
+      raise exception 'Já existe uma cotação manual para este fornecedor.' using errcode = '23505';
+    end if;
+    insert into public.quotes (
+      purchase_request_id, supplier_id, quoted_value, discount_value, net_value,
+      delivery_date, freight_type, payment_terms, notes, selected, origin,
+      online_invitation_id, supplier_submitted_at
+    ) values (
+      invitation.purchase_request_id, invitation.supplier_id, p_quoted_value, 0,
+      p_quoted_value, p_delivery_date, p_freight_type, trim(p_payment_terms),
+      nullif(trim(p_commercial_notes), ''), false, 'online', invitation.id, response_time
+    );
+  end if;
+
+  update public.quote_invitations
+  set status = 'respondida', responded_at = response_time
+  where id = invitation.id;
+  update public.purchase_requests
+  set status = 'em_cotacao'
+  where id = invitation.purchase_request_id;
+
+  return jsonb_build_object('ok', true, 'late', false, 'version', next_version);
+end;
+$$;
+
+revoke all on function public.record_online_quote_response(uuid, numeric, date, text, text, text)
+  from public, anon, authenticated;
+grant execute on function public.record_online_quote_response(uuid, numeric, date, text, text, text)
+  to service_role;

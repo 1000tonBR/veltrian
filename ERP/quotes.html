@@ -36,11 +36,11 @@
     </main>
   </div>
   <dialog class="online-quote-dialog" data-online-quote-dialog aria-labelledby="online-quote-title">
-    <div class="online-quote-dialog-header"><div><p class="kicker aqua">Cotação online</p><h2 id="online-quote-title">Selecionar fornecedores</h2><p>Escolha quem participará desta cotação. O envio por e-mail será conectado na próxima etapa.</p></div><button class="close-button" type="button" data-close-online-quotes aria-label="Fechar">×</button></div>
+    <div class="online-quote-dialog-header"><div><p class="kicker aqua">Cotação online</p><h2 id="online-quote-title">Selecionar fornecedores</h2><p>Os fornecedores selecionados receberão por e-mail um link individual para preencher a proposta.</p></div><button class="close-button" type="button" data-close-online-quotes aria-label="Fechar">×</button></div>
     <div class="online-supplier-filters"><select data-online-supplier-filter-field aria-label="Campo para filtrar fornecedores"><option value="all">Todos os campos</option><option value="number">Número</option><option value="name">Nome</option><option value="sector">Ramo</option><option value="city">Cidade</option></select><input type="search" data-online-supplier-filter placeholder="Digite número, nome, ramo ou cidade" autocomplete="off"></div>
     <label class="online-select-all"><input type="checkbox" data-online-select-all> Selecionar todos os resultados disponíveis</label>
     <div class="online-supplier-list" data-online-supplier-list></div>
-    <div class="online-quote-dialog-actions"><strong data-online-selected-count>0 fornecedores selecionados</strong><div><button class="secondary-button" type="button" data-close-online-quotes>Cancelar</button><button class="primary-button" type="button" data-prepare-online-quotes disabled>Preparar 0 fornecedores</button></div></div>
+    <div class="online-quote-dialog-actions"><strong data-online-selected-count>0 fornecedores selecionados</strong><div><button class="secondary-button" type="button" data-close-online-quotes>Cancelar</button><button class="primary-button" type="button" data-prepare-online-quotes disabled>Enviar para 0 fornecedores</button></div></div>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0"></script><script src="supabase-config.js"></script><script src="auth.js"></script><script src="quotes.js"></script>
 </body></html>
