@@ -25,7 +25,7 @@ Deno.serve(async (request) => {
   if (request.method === 'GET') {
     const rawToken = new URL(request.url).searchParams.get('token') ?? ''
     if (rawToken.length < 40) return json({ error: 'Link de cotação inválido.' }, 400)
-    const portalUrl = Deno.env.get('QUOTE_PORTAL_URL') || 'https://veltrian.com.br/ERP/quote-response.html'
+    const portalUrl = Deno.env.get('QUOTE_PORTAL_URL') || 'https://www.veltrian.com.br/ERP/quote-response.html'
     return new Response(null, { status: 302, headers: { Location: `${portalUrl}#token=${encodeURIComponent(rawToken)}`, 'Cache-Control': 'no-store' } })
   }
   if (request.method !== 'POST') return json({ error: 'Método não permitido.' }, 405)
