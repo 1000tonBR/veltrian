@@ -5,6 +5,8 @@ const materialSaveButton = document.querySelector('[data-save-material]');
 const materialCancelButton = document.querySelector('[data-cancel-edit]');
 const materialFormKicker = document.querySelector('[data-form-kicker]');
 const materialControlsStock = document.querySelector('[data-controls-stock]');
+const materialAutomaticRequisition = document.querySelector('[data-automatic-requisition]');
+const materialAutomaticStrategy = materialForm.elements.automatic_requisition_strategy;
 const materialStockLimits = [...document.querySelectorAll('[data-stock-limit]')];
 let materials = [];
 let editingMaterialId = null;
@@ -17,7 +19,7 @@ const formatMaterialDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', {
 function renderMaterials(entries = materials) {
   const body = document.querySelector('[data-materials-rows]');
   body.innerHTML = entries.length ? entries.map((material) => `<tr>
-    <td>${material.material_number ? `MAT-${String(material.material_number).padStart(4, '0')}` : '—'}</td><td>${escapeMaterial(material.description)}</td><td>${escapeMaterial(material.unit_of_measure)}</td><td>${escapeMaterial(material.default_quantity)}</td><td><span class="status ${material.controls_stock ? 'approved' : 'pending'}">${material.controls_stock ? 'Sim' : 'Não'}</span></td><td><span class="status ${material.automatic_requisition ? 'approved' : 'pending'}">${material.automatic_requisition ? 'Sim' : 'Não'}</span></td><td><strong>${material.controls_stock ? escapeMaterial(material.current_stock) : '—'}</strong></td><td>${material.controls_stock ? escapeMaterial(material.minimum_stock) : '—'}</td><td>${material.controls_stock ? escapeMaterial(material.maximum_stock) : '—'}</td><td>${escapeMaterial(material.manufacturer)}</td><td>${escapeMaterial(material.serial_number)}</td>
+    <td>${material.material_number ? `MAT-${String(material.material_number).padStart(4, '0')}` : '—'}</td><td>${escapeMaterial(material.description)}</td><td>${escapeMaterial(material.unit_of_measure)}</td><td>${escapeMaterial(material.default_quantity)}</td><td><span class="status ${material.controls_stock ? 'approved' : 'pending'}">${material.controls_stock ? 'Sim' : 'Não'}</span></td><td><span class="status ${material.automatic_requisition ? 'approved' : 'pending'}">${material.automatic_requisition ? (material.automatic_requisition_strategy === 'stk_max' ? 'Stk máx' : 'Mediana') : 'Não'}</span></td><td><strong>${material.controls_stock ? escapeMaterial(material.current_stock) : '—'}</strong></td><td>${material.controls_stock ? escapeMaterial(material.minimum_stock) : '—'}</td><td>${material.controls_stock ? escapeMaterial(material.maximum_stock) : '—'}</td><td>${escapeMaterial(material.manufacturer)}</td><td>${escapeMaterial(material.serial_number)}</td>
     <td><span class="status ${material.active ? 'approved' : 'pending'}">${material.active ? 'Ativo' : 'Inativo'}</span></td><td>${formatMaterialDate(material.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-material="${material.id}">Editar</button><button type="button" class="row-button danger" data-delete-material="${material.id}">Excluir</button></td>
   </tr>`).join('') : '<tr><td colspan="14" class="empty-cell">Nenhum material encontrado.</td></tr>';
 }
@@ -35,6 +37,16 @@ async function loadMaterials() {
 function updateStockLimitState() {
   const enabled = materialControlsStock.checked;
   materialStockLimits.forEach((field) => { field.disabled = !enabled; field.required = enabled; if (!enabled) field.value = ''; });
+  materialAutomaticRequisition.disabled = !enabled;
+  if (!enabled) materialAutomaticRequisition.checked = false;
+  updateAutomaticRequisitionState();
+}
+
+function updateAutomaticRequisitionState() {
+  const enabled = materialControlsStock.checked && materialAutomaticRequisition.checked;
+  materialAutomaticStrategy.disabled = !enabled;
+  materialAutomaticStrategy.required = enabled;
+  if (!enabled) materialAutomaticStrategy.value = '';
 }
 
 function resetMaterialForm() {
@@ -70,12 +82,15 @@ materialForm.addEventListener('submit', async (event) => {
   const values = Object.fromEntries(new FormData(materialForm));
   values.active = values.active === 'true';
   values.controls_stock = materialControlsStock.checked;
-  values.automatic_requisition = materialForm.elements.automatic_requisition.checked;
+  values.automatic_requisition = materialAutomaticRequisition.checked;
+  values.automatic_requisition_strategy = values.automatic_requisition ? materialAutomaticStrategy.value : null;
   values.unit_of_measure = String(values.unit_of_measure || '').trim().toLocaleUpperCase('pt-BR');
   values.default_quantity = values.default_quantity ? Number(values.default_quantity) : null;
   values.minimum_stock = values.controls_stock ? Number(values.minimum_stock) : null;
   values.maximum_stock = values.controls_stock ? Number(values.maximum_stock) : null;
   if (values.controls_stock && values.maximum_stock < values.minimum_stock) return showMaterialNotice('O estoque máximo deve ser maior ou igual ao estoque mínimo.', 'error');
+  if (values.automatic_requisition && !values.automatic_requisition_strategy) return showMaterialNotice('Selecione o critério da requisição automática.', 'error');
+  if (values.automatic_requisition_strategy === 'mediana' && values.maximum_stock <= values.minimum_stock) return showMaterialNotice('No critério Mediana, o estoque máximo deve ser maior que o estoque mínimo.', 'error');
   Object.keys(values).forEach((key) => { if (values[key] === '') values[key] = null; });
   const request = editingMaterialId ? materialClient.from('items').update(values).eq('id', editingMaterialId) : materialClient.from('items').insert(values);
   const { error } = await request;
@@ -91,6 +106,7 @@ document.querySelector('[data-materials-rows]').addEventListener('click', (event
 });
 materialCancelButton.addEventListener('click', resetMaterialForm);
 materialControlsStock.addEventListener('change', updateStockLimitState);
+materialAutomaticRequisition.addEventListener('change', updateAutomaticRequisitionState);
 document.querySelector('[data-material-filter]').addEventListener('input', (event) => {
   const term = event.target.value.trim().toLocaleLowerCase('pt-BR');
   renderMaterials(materials.filter((material) => {
