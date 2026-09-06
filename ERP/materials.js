@@ -17,9 +17,9 @@ const formatMaterialDate = (value) => value ? new Intl.DateTimeFormat('pt-BR', {
 function renderMaterials(entries = materials) {
   const body = document.querySelector('[data-materials-rows]');
   body.innerHTML = entries.length ? entries.map((material) => `<tr>
-    <td>${material.material_number ? `MAT-${String(material.material_number).padStart(4, '0')}` : '—'}</td><td>${escapeMaterial(material.description)}</td><td>${escapeMaterial(material.unit_of_measure)}</td><td>${escapeMaterial(material.default_quantity)}</td><td><span class="status ${material.controls_stock ? 'approved' : 'pending'}">${material.controls_stock ? 'Sim' : 'Não'}</span></td><td><strong>${material.controls_stock ? escapeMaterial(material.current_stock) : '—'}</strong></td><td>${material.controls_stock ? escapeMaterial(material.minimum_stock) : '—'}</td><td>${material.controls_stock ? escapeMaterial(material.maximum_stock) : '—'}</td><td>${escapeMaterial(material.manufacturer)}</td><td>${escapeMaterial(material.serial_number)}</td>
+    <td>${material.material_number ? `MAT-${String(material.material_number).padStart(4, '0')}` : '—'}</td><td>${escapeMaterial(material.description)}</td><td>${escapeMaterial(material.unit_of_measure)}</td><td>${escapeMaterial(material.default_quantity)}</td><td><span class="status ${material.controls_stock ? 'approved' : 'pending'}">${material.controls_stock ? 'Sim' : 'Não'}</span></td><td><span class="status ${material.automatic_requisition ? 'approved' : 'pending'}">${material.automatic_requisition ? 'Sim' : 'Não'}</span></td><td><strong>${material.controls_stock ? escapeMaterial(material.current_stock) : '—'}</strong></td><td>${material.controls_stock ? escapeMaterial(material.minimum_stock) : '—'}</td><td>${material.controls_stock ? escapeMaterial(material.maximum_stock) : '—'}</td><td>${escapeMaterial(material.manufacturer)}</td><td>${escapeMaterial(material.serial_number)}</td>
     <td><span class="status ${material.active ? 'approved' : 'pending'}">${material.active ? 'Ativo' : 'Inativo'}</span></td><td>${formatMaterialDate(material.created_at)}</td><td class="table-actions"><button type="button" class="row-button" data-edit-material="${material.id}">Editar</button><button type="button" class="row-button danger" data-delete-material="${material.id}">Excluir</button></td>
-  </tr>`).join('') : '<tr><td colspan="13" class="empty-cell">Nenhum material encontrado.</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="14" class="empty-cell">Nenhum material encontrado.</td></tr>';
 }
 
 async function loadMaterials() {
@@ -70,6 +70,7 @@ materialForm.addEventListener('submit', async (event) => {
   const values = Object.fromEntries(new FormData(materialForm));
   values.active = values.active === 'true';
   values.controls_stock = materialControlsStock.checked;
+  values.automatic_requisition = materialForm.elements.automatic_requisition.checked;
   values.unit_of_measure = String(values.unit_of_measure || '').trim().toLocaleUpperCase('pt-BR');
   values.default_quantity = values.default_quantity ? Number(values.default_quantity) : null;
   values.minimum_stock = values.controls_stock ? Number(values.minimum_stock) : null;
