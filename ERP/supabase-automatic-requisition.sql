@@ -69,8 +69,8 @@ create unique index if not exists purchase_requests_one_active_auto_per_item_uid
   on public.purchase_requests (automatic_source_item_id)
   where origin = 'automatic' and automatic_active;
 
-create or replace function public.create_automatic_purchase_request_from_movement()
-returns trigger
+create or replace function public.evaluate_automatic_purchase_request(p_item_id uuid)
+returns uuid
 language plpgsql
 security invoker
 set search_path = ''
@@ -81,15 +81,21 @@ declare
   request_quantity numeric;
   request_id uuid;
   strategy_label text;
+  requester_id uuid;
 begin
+  requester_id := auth.uid();
+  if requester_id is null then
+    return null;
+  end if;
+
   select *
   into material
   from public.items
-  where id = new.item_id
+  where id = p_item_id
   for update;
 
   if not found then
-    return new;
+    return null;
   end if;
 
   select coalesce(sum(
@@ -109,7 +115,7 @@ begin
     where origin = 'automatic'
       and automatic_source_item_id = material.id
       and automatic_active;
-    return new;
+    return null;
   end if;
 
   if not material.active
@@ -119,7 +125,7 @@ begin
     or material.minimum_stock is null
     or material.maximum_stock is null
     or current_stock >= material.minimum_stock then
-    return new;
+    return null;
   end if;
 
   if exists (
@@ -129,7 +135,7 @@ begin
       and pr.automatic_source_item_id = material.id
       and pr.automatic_active
   ) then
-    return new;
+    return null;
   end if;
 
   if exists (
@@ -150,7 +156,7 @@ begin
         or latest_order.status in ('rascunho', 'em_aprovacao', 'aprovado', 'reprovado')
       )
   ) then
-    return new;
+    return null;
   end if;
 
   if material.automatic_requisition_strategy = 'stk_max' then
@@ -162,7 +168,7 @@ begin
   end if;
 
   if request_quantity <= 0 then
-    return new;
+    return null;
   end if;
 
   insert into public.purchase_requests (
@@ -187,7 +193,7 @@ begin
     'Compras',
     0,
     'rascunho',
-    new.created_by,
+    requester_id,
     'normal',
     'automatic',
     material.id,
@@ -218,6 +224,33 @@ begin
     );
   end if;
 
+  return request_id;
+end;
+$$;
+
+revoke all on function public.evaluate_automatic_purchase_request(uuid) from public, anon;
+grant execute on function public.evaluate_automatic_purchase_request(uuid) to authenticated;
+
+create or replace function public.create_automatic_purchase_request_from_movement()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  perform public.evaluate_automatic_purchase_request(new.item_id);
+  return new;
+end;
+$$;
+
+create or replace function public.create_automatic_purchase_request_from_item()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  perform public.evaluate_automatic_purchase_request(new.id);
   return new;
 end;
 $$;
@@ -230,6 +263,16 @@ after insert on public.inventory_movements
 for each row
 execute function public.create_automatic_purchase_request_from_movement();
 
+drop trigger if exists items_evaluate_automatic_request
+  on public.items;
+
+create trigger items_evaluate_automatic_request
+after insert or update of active, controls_stock, minimum_stock, maximum_stock,
+  automatic_requisition, automatic_requisition_strategy
+on public.items
+for each row
+execute function public.create_automatic_purchase_request_from_item();
+
 comment on column public.items.automatic_requisition is
   'Indica se o material deverá participar da geração automática de requisições de compra.';
 
@@ -238,3 +281,9 @@ comment on column public.items.automatic_requisition_strategy is
 
 comment on function public.create_automatic_purchase_request_from_movement() is
   'Gera uma RC automática após movimentação que deixe o saldo abaixo do estoque mínimo.';
+
+comment on function public.create_automatic_purchase_request_from_item() is
+  'Reavalia a geração automática ao ativar ou alterar a configuração do material.';
+
+comment on function public.evaluate_automatic_purchase_request(uuid) is
+  'Avalia saldo, evita duplicidade e cria a RC automática conforme o critério configurado.';
