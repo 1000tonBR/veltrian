@@ -1,7 +1,19 @@
 .contact-button {
-  min-width: min(100%, 285px);
+  width: min(100%, 310px);
+  min-width: 0;
   justify-content: space-between;
   text-align: left;
+}
+
+.contact-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.contact-actions .button-light {
+  margin-top: 0;
 }
 
 .contact-details {
@@ -10,8 +22,25 @@
   line-height: 1.25;
 }
 
+.contact-details strong {
+  font-size: .76rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
 .contact-details span:last-child {
   color: #15515a;
   font-size: .78rem;
   font-weight: 600;
+}
+
+@media (max-width: 680px) {
+  .contact-actions {
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .contact-button {
+    width: min(100%, 330px);
+  }
 }

@@ -17,71 +17,99 @@
   <link rel="stylesheet" href="css/footer.css">
 </head>
 <body>
-  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <a class="skip-link" href="#conteudo" data-i18n="skip.content">Pular para o conteúdo</a>
   <header class="site-header" data-header>
     <div class="container nav-wrap">
-      <a class="brand" href="#inicio" aria-label="Veltrian, início">
+      <a class="brand" href="#inicio" aria-label="Veltrian, início" data-i18n-aria-label="brand.home">
         <img class="brand-mark" src="img/veltrian-mark.png" alt="" aria-hidden="true">
         <span>VELTRIAN</span>
       </a>
-      <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-principal" data-menu-toggle><span></span><span></span></button>
-      <nav id="menu-principal" class="main-nav" aria-label="Navegação principal" data-nav>
-        <a href="#sobre">A Veltrian</a><a href="#solucoes">Soluções</a><a href="#metodo">Como atuamos</a><a href="ERP/index.html">ERP</a><a href="#contato" class="nav-cta">Falar com especialista</a>
-      </nav>
+      <div class="header-tools">
+        <nav id="menu-principal" class="main-nav" aria-label="Navegação principal" data-i18n-aria-label="nav.label" data-nav>
+          <a href="#sobre" data-i18n="nav.about">A Veltrian</a>
+          <a href="#solucoes" data-i18n="nav.solutions">Soluções</a>
+          <a href="#metodo" data-i18n="nav.method">Como atuamos</a>
+          <a href="ERP/index.html">ERP</a>
+          <a href="#contato" class="nav-cta" data-i18n="nav.contact">Falar com especialista</a>
+        </nav>
+        <div class="language-switcher" role="group" aria-label="Selecionar idioma" data-i18n-aria-label="language.label">
+          <button type="button" class="language-button" data-language="es" aria-label="Español" title="Español" aria-pressed="false"><img src="https://upload.wikimedia.org/wikipedia/en/9/9a/Flag_of_Spain.svg" alt="" aria-hidden="true"></button>
+          <button type="button" class="language-button is-active" data-language="pt" aria-label="Português do Brasil" title="Português do Brasil" aria-pressed="true"><img src="https://upload.wikimedia.org/wikipedia/en/0/05/Flag_of_Brazil.svg" alt="" aria-hidden="true"></button>
+          <button type="button" class="language-button" data-language="en" aria-label="English" title="English" aria-pressed="false"><img src="https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg" alt="" aria-hidden="true"></button>
+        </div>
+        <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu-principal" data-i18n-aria-label="menu.open" data-menu-toggle><span></span><span></span></button>
+      </div>
     </div>
   </header>
 
   <main id="conteudo">
     <section class="hero" id="inicio">
       <div class="container hero-content">
-        <p class="eyebrow hero-eyebrow">Estratégia. Performance. Conexões.</p>
-        <h1>Conectamos experiência industrial a <em>resultados reais.</em></h1>
-        <p class="hero-lead">Transformamos estratégia, processos e conexões em performance sustentável para a indústria.</p>
-        <div class="hero-actions"><a class="button button-primary" href="#contato">Falar com especialista <span aria-hidden="true">→</span></a><a class="button button-ghost" href="#solucoes">Conheça nossos serviços</a></div>
+        <p class="eyebrow hero-eyebrow" data-i18n="hero.eyebrow">Estratégia. Performance. Conexões.</p>
+        <h1 data-i18n-html="hero.title">Conectamos experiência industrial a <em>resultados reais.</em></h1>
+        <p class="hero-lead" data-i18n="hero.lead">Transformamos estratégia, processos e conexões em performance sustentável para a indústria.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#contato"><span data-i18n="hero.contact">Falar com especialista</span> <span aria-hidden="true">→</span></a>
+          <a class="button button-ghost" href="#solucoes" data-i18n="hero.services">Conheça nossos serviços</a>
+        </div>
       </div>
-      <div class="container hero-pillars" aria-label="Pilares de atuação">
-        <article><span class="pillar-icon" aria-hidden="true">◎</span><div><h2>Performance industrial</h2><p>Aumentamos eficiência, confiabilidade e produtividade dos ativos.</p></div></article>
-        <article><span class="pillar-icon" aria-hidden="true">◇</span><div><h2>Supply chain &amp; MRO</h2><p>Otimização de suprimentos, estoques e gestão de materiais.</p></div></article>
-        <article><span class="pillar-icon" aria-hidden="true">◌</span><div><h2>Gestão de ativos</h2><p>Estratégia e execução para maximizar o ciclo de vida dos ativos.</p></div></article>
-        <article><span class="pillar-icon" aria-hidden="true">⌘</span><div><h2>Desenvolvimento de negócios</h2><p>Conectamos soluções, fornecedores e oportunidades de valor.</p></div></article>
+      <div class="container hero-pillars" aria-label="Pilares de atuação" data-i18n-aria-label="pillars.label">
+        <article><span class="pillar-icon" aria-hidden="true">◎</span><div><h2 data-i18n="pillars.performance.title">Performance industrial</h2><p data-i18n="pillars.performance.text">Aumentamos eficiência, confiabilidade e produtividade dos ativos.</p></div></article>
+        <article><span class="pillar-icon" aria-hidden="true">◇</span><div><h2>Supply chain &amp; MRO</h2><p data-i18n="pillars.supply.text">Otimização de suprimentos, estoques e gestão de materiais.</p></div></article>
+        <article><span class="pillar-icon" aria-hidden="true">◌</span><div><h2 data-i18n="pillars.assets.title">Gestão de ativos</h2><p data-i18n="pillars.assets.text">Estratégia e execução para maximizar o ciclo de vida dos ativos.</p></div></article>
+        <article><span class="pillar-icon" aria-hidden="true">⌘</span><div><h2 data-i18n="pillars.business.title">Desenvolvimento de negócios</h2><p data-i18n="pillars.business.text">Conectamos soluções, fornecedores e oportunidades de valor.</p></div></article>
       </div>
     </section>
 
     <section class="intro section" id="sobre">
       <div class="container split-layout">
-        <div><p class="eyebrow teal">A Veltrian</p><h2>Decisões melhores começam com uma operação que faz sentido.</h2></div>
-        <div class="intro-copy"><p>Somos uma consultoria de performance industrial e gestão de negócios. Atuamos ao lado de líderes que buscam ganhos sustentáveis, com uma visão integrada de pessoas, processos e tecnologia.</p><a class="text-link dark" href="#metodo">Nossa forma de atuar <span aria-hidden="true">↗</span></a></div>
+        <div><p class="eyebrow teal" data-i18n="about.eyebrow">A Veltrian</p><h2 data-i18n="about.title">Decisões melhores começam com uma operação que faz sentido.</h2></div>
+        <div class="intro-copy"><p data-i18n="about.text">Somos uma consultoria de performance industrial e gestão de negócios. Atuamos ao lado de líderes que buscam ganhos sustentáveis, com uma visão integrada de pessoas, processos e tecnologia.</p><a class="text-link dark" href="#metodo"><span data-i18n="about.link">Nossa forma de atuar</span> <span aria-hidden="true">↗</span></a></div>
       </div>
     </section>
 
     <section class="solutions section section-dark" id="solucoes">
-      <div class="container"><div class="section-heading"><div><p class="eyebrow">Soluções sob medida</p><h2>Do diagnóstico à transformação.</h2></div><p>Foco no que realmente move a sua operação: produtividade, fluxo, previsibilidade e geração de valor.</p></div>
+      <div class="container"><div class="section-heading"><div><p class="eyebrow" data-i18n="solutions.eyebrow">Soluções sob medida</p><h2 data-i18n="solutions.title">Do diagnóstico à transformação.</h2></div><p data-i18n="solutions.lead">Foco no que realmente move a sua operação: produtividade, fluxo, previsibilidade e geração de valor.</p></div>
         <div class="service-grid">
-          <article class="service-card reveal"><span class="service-number">01</span><div class="service-icon" aria-hidden="true">↗</div><h3>Performance industrial</h3><p>Processos mais eficientes, indicadores que direcionam e uma rotina de melhoria contínua.</p></article>
-          <article class="service-card reveal"><span class="service-number">02</span><div class="service-icon" aria-hidden="true">⌁</div><h3>Supply chain</h3><p>Uma cadeia conectada, com maior nível de serviço, equilíbrio de estoques e agilidade.</p></article>
-          <article class="service-card reveal"><span class="service-number">03</span><div class="service-icon" aria-hidden="true">⊞</div><h3>Planejamento de materiais</h3><p>Mais confiança para planejar demanda, materiais, capacidade e prioridades de produção.</p></article>
-          <article class="service-card reveal"><span class="service-number">04</span><div class="service-icon" aria-hidden="true">◫</div><h3>Business intelligence</h3><p>Dados claros, painéis relevantes e decisões orientadas por informação confiável.</p></article>
+          <article class="service-card reveal"><span class="service-number">01</span><div class="service-icon" aria-hidden="true">↗</div><h3 data-i18n="services.performance.title">Performance industrial</h3><p data-i18n="services.performance.text">Processos mais eficientes, indicadores que direcionam e uma rotina de melhoria contínua.</p></article>
+          <article class="service-card reveal"><span class="service-number">02</span><div class="service-icon" aria-hidden="true">⌁</div><h3>Supply chain</h3><p data-i18n="services.supply.text">Uma cadeia conectada, com maior nível de serviço, equilíbrio de estoques e agilidade.</p></article>
+          <article class="service-card reveal"><span class="service-number">03</span><div class="service-icon" aria-hidden="true">⊞</div><h3 data-i18n="services.materials.title">Planejamento de materiais</h3><p data-i18n="services.materials.text">Mais confiança para planejar demanda, materiais, capacidade e prioridades de produção.</p></article>
+          <article class="service-card reveal"><span class="service-number">04</span><div class="service-icon" aria-hidden="true">◫</div><h3>Business intelligence</h3><p data-i18n="services.bi.text">Dados claros, painéis relevantes e decisões orientadas por informação confiável.</p></article>
         </div>
       </div>
     </section>
 
-    <section class="method section" id="metodo"><div class="container"><p class="eyebrow teal">Como atuamos</p><div class="section-heading method-heading"><h2>Uma parceria que transforma intenção em resultado.</h2><p>Unimos profundidade analítica e execução prática para gerar avanços percebidos no dia a dia da operação.</p></div><ol class="steps"><li><span>01</span><div><h3>Entendemos o contexto</h3><p>Escuta, diagnóstico e leitura objetiva dos desafios.</p></div></li><li><span>02</span><div><h3>Construímos o caminho</h3><p>Prioridades, metas e um plano aplicável à realidade do negócio.</p></div></li><li><span>03</span><div><h3>Implementamos juntos</h3><p>Ritmo de execução, acompanhamento e autonomia para o time.</p></div></li></ol></div></section>
+    <section class="method section" id="metodo"><div class="container"><p class="eyebrow teal" data-i18n="method.eyebrow">Como atuamos</p><div class="section-heading method-heading"><h2 data-i18n="method.title">Uma parceria que transforma intenção em resultado.</h2><p data-i18n="method.lead">Unimos profundidade analítica e execução prática para gerar avanços percebidos no dia a dia da operação.</p></div><ol class="steps"><li><span>01</span><div><h3 data-i18n="method.step1.title">Entendemos o contexto</h3><p data-i18n="method.step1.text">Escuta, diagnóstico e leitura objetiva dos desafios.</p></div></li><li><span>02</span><div><h3 data-i18n="method.step2.title">Construímos o caminho</h3><p data-i18n="method.step2.text">Prioridades, metas e um plano aplicável à realidade do negócio.</p></div></li><li><span>03</span><div><h3 data-i18n="method.step3.title">Implementamos juntos</h3><p data-i18n="method.step3.text">Ritmo de execução, acompanhamento e autonomia para o time.</p></div></li></ol></div></section>
 
     <section class="presence" id="presenca" aria-labelledby="presenca-titulo">
-      <div class="presence-media"><img src="img/veltrian-ambiente.png" alt="Ambiente corporativo contemporâneo com sala de reuniões"></div>
+      <div class="presence-media"><img src="img/veltrian-ambiente.png" alt="Ambiente corporativo contemporâneo com sala de reuniões" data-i18n-alt="presence.imageAlt"></div>
       <div class="presence-shade" aria-hidden="true"></div>
       <div class="container presence-content">
         <img class="presence-mark" src="img/veltrian-mark.png" alt="">
-        <p class="eyebrow">Estratégia que se vê na prática</p>
-        <h2 id="presenca-titulo">Uma visão que conecta pessoas, processos e resultado.</h2>
-        <p>Ambientes de alta performance nascem de decisões claras, execução consistente e parceiros que entendem a realidade do negócio.</p>
-        <a class="text-link" href="#metodo">Conheça nossa forma de atuar <span aria-hidden="true">↗</span></a>
+        <p class="eyebrow" data-i18n="presence.eyebrow">Estratégia que se vê na prática</p>
+        <h2 id="presenca-titulo" data-i18n="presence.title">Uma visão que conecta pessoas, processos e resultado.</h2>
+        <p data-i18n="presence.text">Ambientes de alta performance nascem de decisões claras, execução consistente e parceiros que entendem a realidade do negócio.</p>
+        <a class="text-link" href="#metodo"><span data-i18n="presence.link">Conheça nossa forma de atuar</span> <span aria-hidden="true">↗</span></a>
       </div>
     </section>
 
-    <section class="cta-section" id="contato"><div class="container cta-box"><p class="eyebrow">Vamos conversar</p><h2>O próximo resultado pode começar agora.</h2><p>Conte o que a sua operação precisa resolver. A Veltrian ajuda a transformar desafios em direção.</p><a class="button button-light contact-button" href="https://wa.me/5516997929477?text=Ol%C3%A1%2C%20gostaria%20de%20conversar%20com%20a%20Veltrian." target="_blank" rel="noopener" aria-label="Falar com a Veltrian pelo WhatsApp, no número +55 16 99792-9477"><span class="contact-details"><span>joaopaulo@veltrian.com.br</span><span>+55 (16) 99792-9477</span></span><span aria-hidden="true">↗</span></a></div></section>
+    <section class="cta-section" id="contato">
+      <div class="container cta-box">
+        <p class="eyebrow" data-i18n="contact.eyebrow">Vamos conversar</p>
+        <h2 data-i18n="contact.title">O próximo resultado pode começar agora.</h2>
+        <p data-i18n="contact.text">Conte o que a sua operação precisa resolver. A Veltrian ajuda a transformar desafios em direção.</p>
+        <div class="contact-actions">
+          <a class="button button-light contact-button" href="https://wa.me/5516997929477?text=Ol%C3%A1%2C%20gostaria%20de%20conversar%20com%20a%20Veltrian." target="_blank" rel="noopener" aria-label="Falar com a Veltrian pelo WhatsApp, no número +55 16 99792-9477" data-i18n-aria-label="contact.whatsappAria" data-contact-whatsapp>
+            <span class="contact-details"><strong>WhatsApp</strong><span>+55 (16) 99792-9477</span></span><span aria-hidden="true">↗</span>
+          </a>
+          <a class="button button-light contact-button" href="mailto:joaopaulo@veltrian.com.br" aria-label="Enviar e-mail para joaopaulo@veltrian.com.br" data-i18n-aria-label="contact.emailAria">
+            <span class="contact-details"><strong data-i18n="contact.email">E-mail</strong><span>joaopaulo@veltrian.com.br</span></span><span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </div>
+    </section>
   </main>
-  <footer><div class="container footer-wrap"><a class="brand" href="#inicio" aria-label="Voltar ao início"><img class="brand-mark" src="img/veltrian-mark.png" alt="" aria-hidden="true"><span>VELTRIAN</span></a><div class="footer-company-details"><p>Performance Industrial &amp; Business</p><address>Rua Sebastião Correa, nº 364, Jardim Imperial<br>Matão-SP<br>CEP: 159903-704</address></div><div class="footer-copyright">© <span class="ano"></span> Veltrian. Todos os direitos reservados.</div></div></footer>
+  <footer><div class="container footer-wrap"><a class="brand" href="#inicio" aria-label="Voltar ao início" data-i18n-aria-label="footer.home"><img class="brand-mark" src="img/veltrian-mark.png" alt="" aria-hidden="true"><span>VELTRIAN</span></a><div class="footer-company-details"><p>Performance Industrial &amp; Business</p><address>Rua Sebastião Correa, nº 364, Jardim Imperial<br>Matão-SP<br>CEP: 159903-704</address></div><div class="footer-copyright">© <span class="ano"></span> Veltrian. <span data-i18n="footer.rights">Todos os direitos reservados.</span></div></div></footer>
   <script src="js/script.js"></script>
 </body>
 </html>
