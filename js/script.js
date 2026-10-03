@@ -59,7 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
       'contact.email': 'E-mail',
       'contact.emailAria': 'Enviar e-mail para joaopaulo@veltrian.com.br',
       'footer.home': 'Voltar ao início',
-      'footer.rights': 'Todos os direitos reservados.'
+      'footer.rights': 'Todos os direitos reservados.',
+      'footer.privacy': 'Política de Privacidade'
     },
     es: {
       'meta.description': 'Veltrian: rendimiento industrial, cadena de suministro e inteligencia de negocios para operaciones más eficientes.',
@@ -120,7 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
       'contact.email': 'Correo electrónico',
       'contact.emailAria': 'Enviar un correo electrónico a joaopaulo@veltrian.com.br',
       'footer.home': 'Volver al inicio',
-      'footer.rights': 'Todos los derechos reservados.'
+      'footer.rights': 'Todos los derechos reservados.',
+      'footer.privacy': 'Política de Privacidad'
     },
     en: {
       'meta.description': 'Veltrian: industrial performance, supply chain and business intelligence for more efficient operations.',
@@ -181,7 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
       'contact.email': 'Email',
       'contact.emailAria': 'Email joaopaulo@veltrian.com.br',
       'footer.home': 'Back to the top',
-      'footer.rights': 'All rights reserved.'
+      'footer.rights': 'All rights reserved.',
+      'footer.privacy': 'Privacy Policy'
     }
   };
 

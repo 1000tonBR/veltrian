@@ -24,6 +24,20 @@
   text-align: right;
 }
 
+.footer-legal-link {
+  display: block;
+  margin-top: .45rem;
+  color: #e3ebec;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: .2rem;
+}
+
+.footer-legal-link:hover,
+.footer-legal-link:focus-visible {
+  color: var(--aqua-light);
+}
+
 @media (max-width: 800px) {
   .footer-wrap {
     grid-template-columns: 1fr;
